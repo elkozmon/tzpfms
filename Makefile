@@ -65,6 +65,7 @@ $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXAR) -o$@ $^ $(PIC) $(LDAR)
 	$(STRIP) $(STRIPAR) $@
+	$(LDD) --unused $@ | $(AWK) -F/ 'BEGIN {args = ""}  /^\t/ {args = args " --remove-needed " $$NF}  END { if(!args) exit; print "$(PATCHELF)" args " $@"}' | sh -x
 
 $(OBJDIR)%$(OBJ) : $(SRCDIR)%.cpp
 	@mkdir -p $(dir $@)

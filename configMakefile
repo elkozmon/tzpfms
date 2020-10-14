@@ -52,6 +52,9 @@ TZPFMS_VERSION := "0.0.0-$(shell git rev-list HEAD --count)"
 INCCMAKEAR := CXXFLAGS="$(INCCXXAR)"
 LNCMAKEAR := LDFLAGS="$(LNCXXAR)"
 
+LDD ?= ldd
+AWK ?= awk
+PATCHELF ?= patchelf
 OBJ := .o
 CXXAR := -O3 -std=c++17 -fno-exceptions -Wall -Wextra $(CXXSPECIFIC) -pipe $(INCCXXAR) $(PIC)
 STRIP ?= strip
