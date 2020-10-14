@@ -1,0 +1,56 @@
+{
+	"build_systems":
+	[
+		{
+			"working_dir": "$project_path",
+			"shell_cmd": "make -j10",
+			"name": "Build tzpfms",
+
+			"target": "ansi_color_build",
+			"syntax": "Packages/ANSIescape/ANSI.sublime-syntax"
+		},
+		{
+			"working_dir": "$project_path",
+			"shell_cmd": "make clean",
+			"name": "Clean tzpfms",
+
+			"target": "ansi_color_build",
+			"syntax": "Packages/ANSIescape/ANSI.sublime-syntax"
+		}
+	],
+	"folders":
+	[
+		{
+			"follow_symlinks": true,
+			"name": "Source",
+			"path": "src"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Test",
+			"path": "test"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Test data",
+			"path": "test-data"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "External code",
+			"path": "ext"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Manpages",
+			"path": "man"
+		},
+		{
+			"follow_symlinks": true,
+			"name": "Build scripts",
+			"path": ".",
+			"file_include_patterns": [".build.yml", "*Makefile"],
+			"folder_exclude_patterns": ["*"]
+		},
+	]
+}

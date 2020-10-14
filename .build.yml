@@ -1,0 +1,17 @@
+image: debian/sid
+packages:
+  - clang
+  - pkg-config
+  - ronn
+tasks:
+  - get-zfs: |
+      sudo sed -i 's/main/main contrib non-free/' /etc/apt/sources.list
+      sudo apt update
+      sudo apt install -y libzfslinux-dev
+  - build-gcc: |
+      cd tzpfms
+      make
+      make clean
+  - build-clang: |
+      cd tzpfms
+      CC=clang CXX=clang++ make
