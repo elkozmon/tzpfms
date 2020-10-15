@@ -2,6 +2,7 @@ image: debian/sid
 packages:
   - clang
   - pkg-config
+  - patchelf
   - ronn
 tasks:
   - get-zfs: |
