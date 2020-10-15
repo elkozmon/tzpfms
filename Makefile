@@ -24,7 +24,7 @@ include configMakefile
 
 
 LDDLLS := rt $(OS_LD_LIBS)
-PKGS := libzfs libzfs_core
+PKGS := libzfs libzfs_core tss2-esys tss2-rc
 LDAR := $(LNCXXAR) $(foreach l,,-L$(BLDDIR)$(l)) $(foreach dll,$(LDDLLS),-l$(dll)) $(shell pkg-config --libs $(PKGS))
 INCAR := $(foreach l,$(foreach l,,$(l)/include),-isystemext/$(l)) $(foreach l,,-isystem$(BLDDIR)$(l)/include) $(shell pkg-config --cflags $(PKGS))
 VERAR := $(foreach l,TZPFMS,-D$(l)_VERSION='$($(l)_VERSION)')
@@ -57,8 +57,8 @@ man : $(subst $(MANDIR),$(OUTDIR)man/,$(MANPAGE_SOURCES))
 $(subst $(MANDIR),$(OUTDIR)man/,$(MANPAGE_SOURCES)) : $(MANDIR)index.txt $(MANPAGE_SOURCES)
 	@rm -rf $(dir $@) && mkdir -p $(dir $@)
 	cp $^ $(dir $@)
-	ronn $@
-	ronn -f $@
+	$(RONN) $@
+	$(RONN) -f $@
 
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))
