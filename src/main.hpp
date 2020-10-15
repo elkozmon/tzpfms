@@ -5,6 +5,7 @@
 
 
 #include "common.hpp"
+#include <libzfs.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -51,7 +52,6 @@ int do_main(int argc, char ** argv, const char * getoptions, G && getoptfn, M &&
 		} else if(!dataset_is_root) {
 			printf("Using dataset %s's encryption root %s instead.\n", zfs_get_name(dataset), encryption_root);
 			// TODO: disallow maybe? or require force option?
-			strcpy(argv[1], encryption_root);
 			zfs_close(dataset);
 			dataset = TRY_PTR(nullptr, zfs_open(libz, encryption_root, ZFS_TYPE_FILESYSTEM));
 		}

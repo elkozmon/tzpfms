@@ -12,23 +12,42 @@
 #include "../zfs.hpp"
 
 
-static const constexpr uint8_t our_test_key[WRAPPING_KEY_LEN] = {
-    0xe2, 0xac, 0xf7, 0x89, 0x32, 0x37, 0xcb, 0x94, 0x67, 0xeb, 0x2b, 0xe9, 0xa3, 0x48, 0x83, 0x72,
-    0xd5, 0x4c, 0xc5, 0x1c, 0x99, 0x65, 0xb0, 0x8d, 0x05, 0xa6, 0xd5, 0xff, 0x7a, 0xf7, 0xeb, 0xfc,
-};
-
-
 int main(int argc, char ** argv) {
+	const char * backup{};
 	return do_main(
-	    argc, argv, "", [](auto) {},
-	    [](auto dataset) {
+	    argc, argv, "b:", [&](auto) { backup = optarg; },
+	    [&](auto dataset) {
+		    if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) {
+			    fprintf(stderr, "Key change error: Key must be loaded.\n");  // mimic libzfs error output
+			    return __LINE__;
+		    }
+
+
+		    uint8_t wrap_key[WRAPPING_KEY_LEN];
+		    TRY_MAIN(read_exact("/dev/random", wrap_key, sizeof(wrap_key)));
+		    if(backup)
+			    TRY_MAIN(write_exact(backup, wrap_key, sizeof(wrap_key), 0400));
+
+
+		    auto wrap_key_s = static_cast<char *>(TRY_PTR("wrap_key_s", alloca(WRAPPING_KEY_LEN * 2 + 1)));
+		    {
+			    auto cur = wrap_key_s;
+			    for(auto kb : wrap_key) {
+				    *cur++ = "0123456789ABCDEF"[(kb >> 4) & 0x0F];
+				    *cur++ = "0123456789ABCDEF"[(kb >> 0) & 0x0F];
+			    }
+			    *cur = '\0';
+		    }
+		    TRY_MAIN(zfs_prop_set(dataset, "xyz.nabijaczleweli:tzpfms.key", wrap_key_s));
+
+
 		    /// zfs_crypto_rewrap() with "prompt" reads from stdin, but not if it's a TTY;
 		    /// this user-proofs the set-up, and means we don't have to touch the filesysten:
 		    /// instead, get an FD, write the raw key data there, dup() it onto stdin,
 		    /// let libzfs read it, then restore stdin
 
 		    int key_fd;
-		    TRY_MAIN(filled_fd(key_fd, (void *)our_test_key, WRAPPING_KEY_LEN));
+		    TRY_MAIN(filled_fd(key_fd, wrap_key, WRAPPING_KEY_LEN));
 		    quickscope_wrapper key_fd_deleter{[=] { close(key_fd); }};
 
 

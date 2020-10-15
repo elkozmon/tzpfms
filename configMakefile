@@ -56,8 +56,8 @@ LDD ?= ldd
 AWK ?= awk
 PATCHELF ?= patchelf
 OBJ := .o
-CXXAR := -O3 -std=c++17 -fno-exceptions -Wall -Wextra $(CXXSPECIFIC) -pipe $(INCCXXAR) $(PIC)
-STRIP ?= strip
+CXXAR := -g -O3 -std=c++17 -fno-exceptions -Wall -Wextra $(CXXSPECIFIC) -pipe $(INCCXXAR) $(PIC)
+STRIP ?= @echo strip
 STRIPAR := --strip-all --remove-section=.comment --remove-section=.note
 
 OUTDIR := out/

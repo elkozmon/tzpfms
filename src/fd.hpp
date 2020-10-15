@@ -26,3 +26,9 @@ int with_stdin_at(int fd, F && what) {
 
 /// with_len may not exceed pipe capacity (64k by default)
 extern int filled_fd(int & fd, const void * with, size_t with_len);
+
+/// Read exactly len bytes from path into data, or error
+extern int read_exact(const char * path, void * data, size_t len);
+
+/// Write exactly len bytes from data into path, or error
+extern int write_exact(const char * path, const void * data, size_t len, mode_t mode);
