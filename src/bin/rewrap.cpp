@@ -64,21 +64,36 @@ int main(int argc, char ** argv) {
 		    // https://tpm2-tss.readthedocs.io/en/latest/group___e_s_y_s___c_o_n_t_e_x_t.html
 		    fprintf(stderr, "Esys_Initialize() = %s\n", Tss2_RC_Decode(Esys_Initialize(&tpm2_ctx, nullptr, nullptr)));
 		    quickscope_wrapper tpm2_ctx_deleter{[&] { Esys_Finalize(&tpm2_ctx); }};
-		    fprintf(stderr, "%p\n", (void *)tpm2_ctx);
 
 		    fprintf(stderr, "Esys_Startup() = %s\n", Tss2_RC_Decode(Esys_Startup(tpm2_ctx, TPM2_SU_CLEAR)));
 
 
-		    // https://github.com/tpm2-software/tpm2-tss/blob/master/test/integration/esys-create-session-auth.int.c#L218
-		    const TPMT_SYM_DEF symmetric = {.algorithm = TPM2_ALG_AES, .keyBits = {.aes = 128}, .mode = {.aes = TPM2_ALG_CFB}};
-
 		    ESYS_TR tpm2_session;
-		    fprintf(stderr, "Esys_StartAuthSession() = %s\n",
-		            Tss2_RC_Decode(Esys_StartAuthSession(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, nullptr, TPM2_SE_HMAC,
-		                                                 &symmetric, TPM2_ALG_SHA512, &tpm2_session)));
 		    quickscope_wrapper tpm2_session_deleter{
 		        [&] { fprintf(stderr, "Esys_FlushContext(tpm2_session) = %s\n", Tss2_RC_Decode(Esys_FlushContext(tpm2_ctx, tpm2_session))); }};
 
+		    {
+			    // https://github.com/tpm2-software/tpm2-tss/blob/master/test/integration/esys-create-session-auth.int.c#L218
+			    TPMT_SYM_DEF session_key{};
+			    session_key.algorithm   = TPM2_ALG_AES;
+			    session_key.keyBits.aes = 128;
+			    session_key.mode.aes    = TPM2_ALG_CFB;
+			    fprintf(stderr, "Esys_StartAuthSession() = %s\n",
+			            Tss2_RC_Decode(Esys_StartAuthSession(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, nullptr, TPM2_SE_HMAC,
+			                                                 &session_key, TPM2_ALG_SHA512, &tpm2_session)));
+		    }
+
+
+		    uint8_t wrap_key[WRAPPING_KEY_LEN];
+		    {
+			    TPM2B_DIGEST * rand{};
+			    fprintf(stderr, "Esys_GetRandom() = %s\n",
+			            Tss2_RC_Decode(Esys_GetRandom(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, WRAPPING_KEY_LEN, &rand)));
+			    quickscope_wrapper rand_deleter{[=] { Esys_Free(rand); }};
+			    if(rand->size != WRAPPING_KEY_LEN)
+				    fprintf(stderr, "Wrong random size: %d\n", rand->size);
+			    memcpy(wrap_key, rand->buffer, WRAPPING_KEY_LEN);
+		    }
 
 		    ESYS_TR primary_handle = ESYS_TR_NONE;
 		    quickscope_wrapper primary_handle_deleter{
@@ -96,35 +111,20 @@ int main(int argc, char ** argv) {
 
 		    {
 			    const TPM2B_SENSITIVE_CREATE primary_sens{};
+
 			    // Adapted from tpm2-tss-3.0.1/test/integration/esys-create-primary-hmac.int.c
-			    const TPM2B_PUBLIC pub = {.size       = 0,
-			                              .publicArea = {.type             = TPM2_ALG_RSA,
-			                                             .nameAlg          = TPM2_ALG_SHA1,
-			                                             .objectAttributes = TPMA_OBJECT_USERWITHAUTH | TPMA_OBJECT_RESTRICTED | TPMA_OBJECT_DECRYPT |
-			                                                                 TPMA_OBJECT_FIXEDTPM | TPMA_OBJECT_FIXEDPARENT | TPMA_OBJECT_SENSITIVEDATAORIGIN,
-			                                             .authPolicy =
-			                                                 {
-			                                                     .size = 0,
-			                                                 },
-			                                             .parameters.rsaDetail =
-			                                                 {
-			                                                     .symmetric =
-			                                                         {
-			                                                             .algorithm   = TPM2_ALG_AES,
-			                                                             .keyBits.aes = 128,
-			                                                             .mode.aes    = TPM2_ALG_CFB,
-			                                                         },
-			                                                     .scheme =
-			                                                         {
-			                                                             .scheme = TPM2_ALG_NULL,
-			                                                         },
-			                                                     .keyBits  = 2048,
-			                                                     .exponent = 0,
-			                                                 },
-			                                             .unique.rsa = {
-			                                                 .size   = 0,
-			                                                 .buffer = {},
-			                                             }}};
+			    TPM2B_PUBLIC pub{};
+			    pub.publicArea.type             = TPM2_ALG_RSA;
+			    pub.publicArea.nameAlg          = TPM2_ALG_SHA1;
+			    pub.publicArea.objectAttributes = TPMA_OBJECT_USERWITHAUTH | TPMA_OBJECT_RESTRICTED | TPMA_OBJECT_DECRYPT | TPMA_OBJECT_FIXEDTPM |
+			                                      TPMA_OBJECT_FIXEDPARENT | TPMA_OBJECT_SENSITIVEDATAORIGIN;
+			    pub.publicArea.parameters.rsaDetail.symmetric.algorithm   = TPM2_ALG_AES;
+			    pub.publicArea.parameters.rsaDetail.symmetric.keyBits.aes = 128;
+			    pub.publicArea.parameters.rsaDetail.symmetric.mode.aes    = TPM2_ALG_CFB;
+			    pub.publicArea.parameters.rsaDetail.scheme.scheme         = TPM2_ALG_NULL;
+			    pub.publicArea.parameters.rsaDetail.keyBits               = 2048;
+			    pub.publicArea.parameters.rsaDetail.exponent              = 0;
+
 			    const TPML_PCR_SELECTION pcrs{};
 
 			    TPM2B_PUBLIC * public_ret{};
@@ -160,26 +160,19 @@ int main(int argc, char ** argv) {
 		    quickscope_wrapper sealant_public_deleter{[=] { Esys_Free(sealant_public); }};
 		    quickscope_wrapper sealant_private_deleter{[=] { Esys_Free(sealant_private); }};
 
+		    /// This is the object with the actual sealed data in it
 		    {
+			    TPM2B_SENSITIVE_CREATE secret_sens{};
+			    secret_sens.sensitive.data.size = sizeof(wrap_key);
+			    memcpy(secret_sens.sensitive.data.buffer, wrap_key, secret_sens.sensitive.data.size);
+
 			    // Same args as tpm2-tools' tpm2_create(1)
-			    const TPM2B_SENSITIVE_CREATE secret_sens{0, {{}, {8, "dupanina"}}};
-			    const TPM2B_PUBLIC pub = {.size       = 0,
-			                              .publicArea = {.type             = TPM2_ALG_KEYEDHASH,
-			                                             .nameAlg          = TPM2_ALG_SHA256,
-			                                             .objectAttributes = TPMA_OBJECT_FIXEDTPM | TPMA_OBJECT_FIXEDPARENT | TPMA_OBJECT_USERWITHAUTH,
-			                                             .authPolicy =
-			                                                 {
-			                                                     .size = 0,
-			                                                 },
-			                                             .parameters.keyedHashDetail.scheme =
-			                                                 {
-			                                                     .scheme  = TPM2_ALG_NULL,
-			                                                     .details = {},
-			                                                 },
-			                                             .unique.keyedHash = {
-			                                                 .size   = 0,
-			                                                 .buffer = {},
-			                                             }}};
+			    TPM2B_PUBLIC pub{};
+			    pub.publicArea.type                                     = TPM2_ALG_KEYEDHASH;
+			    pub.publicArea.nameAlg                                  = TPM2_ALG_SHA256;
+			    pub.publicArea.objectAttributes                         = TPMA_OBJECT_FIXEDTPM | TPMA_OBJECT_FIXEDPARENT | TPMA_OBJECT_USERWITHAUTH;
+			    pub.publicArea.parameters.keyedHashDetail.scheme.scheme = TPM2_ALG_NULL;
+
 			    const TPML_PCR_SELECTION pcrs{};
 
 			    TPM2B_CREATION_DATA * creation_data{};
@@ -197,105 +190,26 @@ int main(int argc, char ** argv) {
 		    quickscope_wrapper sealed_handle_deleter{
 		        [&] { fprintf(stderr, "Esys_FlushContext(sealed_handle) = %s\n", Tss2_RC_Decode(Esys_FlushContext(tpm2_ctx, sealed_handle))); }};
 
+		    /// Load the keyedhash/sealed object into a transient handle
 		    {
-			    const TPM2B_SENSITIVE_CREATE secret_sens{0, {{}, {8, "dupanina"}}};  // TODO: this is the sealed data
-			    const TPM2B_PUBLIC pub = {.size       = 0,
-			                              .publicArea = {.type             = TPM2_ALG_KEYEDHASH,
-			                                             .nameAlg          = TPM2_ALG_SHA256,
-			                                             .objectAttributes = TPMA_OBJECT_FIXEDTPM | TPMA_OBJECT_FIXEDPARENT | TPMA_OBJECT_USERWITHAUTH,
-			                                             .authPolicy =
-			                                                 {
-			                                                     .size = 0,
-			                                                 },
-			                                             .parameters.keyedHashDetail.scheme =
-			                                                 {
-			                                                     .scheme  = TPM2_ALG_NULL,
-			                                                     .details = {},
-			                                                 },
-			                                             .unique.keyedHash = {
-			                                                 .size   = 0,
-			                                                 .buffer = {},
-			                                             }}};
-			    const TPML_PCR_SELECTION pcrs{};
-
-			    TPM2B_PRIVATE * private_ret{};
-			    TPM2B_PUBLIC * public_ret{};
-			    TPM2B_CREATION_DATA * creation_data{};
-			    TPM2B_DIGEST * creation_hash{};
-			    TPMT_TK_CREATION * creation_ticket{};
 			    fprintf(
 			        stderr, "Esys_Load() = %s\n",
 			        Tss2_RC_Decode(Esys_Load(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, sealant_private, sealant_public, &sealed_handle)));
-			    quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
-			    quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
-			    quickscope_wrapper creation_data_deleter{[=] { Esys_Free(creation_data); }};
-			    quickscope_wrapper public_ret_deleter{[=] { Esys_Free(public_ret); }};
-			    quickscope_wrapper private_ret_deleter{[=] { Esys_Free(private_ret); }};
 		    }
 
-		    ESYS_TR persistent_handle = ESYS_TR_NONE;
-		    quickscope_wrapper persistent_handle_deleter{
-		        [&] { fprintf(stderr, "Esys_FlushContext(persistent_handle) = %s\n", Tss2_RC_Decode(Esys_FlushContext(tpm2_ctx, persistent_handle))); }};
+		    TPMI_DH_PERSISTENT persistent_handle = 0x81000001;
 
+		    /// Persist the loaded handle in the TPM — this will make it available as $persistent_handle until we explicitly evict it back to the transient store
 		    {
-			    const TPM2B_SENSITIVE_CREATE secret_sens{0, {{}, {8, "dupanina"}}};  // TODO: this is the sealed data
-			    const TPM2B_PUBLIC pub = {.size       = 0,
-			                              .publicArea = {.type             = TPM2_ALG_KEYEDHASH,
-			                                             .nameAlg          = TPM2_ALG_SHA256,
-			                                             .objectAttributes = TPMA_OBJECT_FIXEDTPM | TPMA_OBJECT_FIXEDPARENT | TPMA_OBJECT_USERWITHAUTH,
-			                                             .authPolicy =
-			                                                 {
-			                                                     .size = 0,
-			                                                 },
-			                                             .parameters.keyedHashDetail.scheme =
-			                                                 {
-			                                                     .scheme  = TPM2_ALG_NULL,
-			                                                     .details = {},
-			                                                 },
-			                                             .unique.keyedHash = {
-			                                                 .size   = 0,
-			                                                 .buffer = {},
-			                                             }}};
-			    const TPML_PCR_SELECTION pcrs{};
-
-			    TPM2B_PRIVATE * private_ret{};
-			    TPM2B_PUBLIC * public_ret{};
-			    TPM2B_CREATION_DATA * creation_data{};
-			    TPM2B_DIGEST * creation_hash{};
-			    TPMT_TK_CREATION * creation_ticket{};
+			    // Can't be flushed (tpm:parameter(1):value is out of range or is not correct for the context), plus, that's kinda the point
+			    ESYS_TR new_handle = ESYS_TR_NONE;
 			    fprintf(stderr, "Esys_EvictControl() = %s\n",
 			            Tss2_RC_Decode(
-			                Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, sealed_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0x81000001, &persistent_handle)));
-			    quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
-			    quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
-			    quickscope_wrapper creation_data_deleter{[=] { Esys_Free(creation_data); }};
-			    quickscope_wrapper public_ret_deleter{[=] { Esys_Free(public_ret); }};
-			    quickscope_wrapper private_ret_deleter{[=] { Esys_Free(private_ret); }};
+			                Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, sealed_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, persistent_handle, &new_handle)));
 		    }
 
-		    fprintf(stderr, "0x%x\n", 0x81000001);  // TODO: find first unused
-		                                            // TODO: remove previous
-
-
-		    // const TPM2B_MAX_BUFFER to_hash{8, "dupanina"};
-		    // TPM2B_DIGEST * hashed{};
-		    // TPMT_TK_HASHCHECK * valid{};
-		    // fprintf(stderr, "%s\n",
-		    //         Tss2_RC_Decode(Esys_Hash(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &to_hash, TPM2_ALG_SHA256, ESYS_TR_RH_OWNER, &hashed, &valid)));
-		    // quickscope_wrapper valid_deleter{[=] { Esys_Free(valid); }};
-		    // quickscope_wrapper hashed_deleter{[=] { Esys_Free(hashed); }};
-		    // fprintf(stderr, "hashed.len=%u\n", (unsigned)hashed->size);
-
-		    // auto hashed_s = static_cast<char *>(TRY_PTR("hashed_s", alloca(WRAPPING_KEY_LEN * 2 + 1)));
-		    // {
-		    //  auto cur = hashed_s;
-		    //  for(auto kb : *hashed) {
-		    //   *cur++ = "0123456789ABCDEF"[(kb >> 4) & 0x0F];
-		    //   *cur++ = "0123456789ABCDEF"[(kb >> 0) & 0x0F];
-		    //  }
-		    //  *cur = '\0';
-		    // }
-		    // fprintf(stderr, "%s\n", hashed_s);
+		    fprintf(stderr, "0x%x\n", persistent_handle);  // TODO: find first unused
+		                                                   // TODO: remove previous
 
 
 		    if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) {
@@ -304,22 +218,16 @@ int main(int argc, char ** argv) {
 		    }
 
 
-		    uint8_t wrap_key[WRAPPING_KEY_LEN];
-		    TRY_MAIN(read_exact("/dev/random", wrap_key, sizeof(wrap_key)));
+		    // uint8_t wrap_key[WRAPPING_KEY_LEN];
+		    // TRY_MAIN(read_exact("/dev/random", wrap_key, sizeof(wrap_key)));
 		    if(backup)
 			    TRY_MAIN(write_exact(backup, wrap_key, sizeof(wrap_key), 0400));
 
-
-		    auto wrap_key_s = static_cast<char *>(TRY_PTR("wrap_key_s", alloca(WRAPPING_KEY_LEN * 2 + 1)));
-		    {
-			    auto cur = wrap_key_s;
-			    for(auto kb : wrap_key) {
-				    *cur++ = "0123456789ABCDEF"[(kb >> 4) & 0x0F];
-				    *cur++ = "0123456789ABCDEF"[(kb >> 0) & 0x0F];
-			    }
-			    *cur = '\0';
-		    }
-		    TRY_MAIN(zfs_prop_set(dataset, "xyz.nabijaczleweli:tzpfms.key", wrap_key_s));
+		    char persistent_handle_s[2 + sizeof(persistent_handle) * 2 + 1];
+		    if(auto written = snprintf(persistent_handle_s, sizeof(persistent_handle_s), "0x%02X", persistent_handle);
+		       written < 0 || written >= static_cast<int>(sizeof(persistent_handle_s)))
+			    fprintf(stderr, "oops, truncated: %d/%d\n", written, sizeof(persistent_handle_s));
+		    TRY_MAIN(zfs_prop_set(dataset, "xyz.nabijaczleweli:tzpfms.key", persistent_handle_s));
 
 
 		    /// zfs_crypto_rewrap() with "prompt" reads from stdin, but not if it's a TTY;

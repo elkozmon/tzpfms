@@ -2,6 +2,7 @@ image: debian/sid
 packages:
   - clang
   - pkg-config
+  - libtss2-dev
   - patchelf
   - ronn
 tasks:
