@@ -14,7 +14,7 @@ Plus it's a pretty good annoyed sigh onomatopoeia.
 
 ### Building
 
-You'll need `pkg-config`, `patchelf` (or to set `$PATCHELF=true`), `libzfslinux-dev`, `libtss2-dev`<!-- , to initialise the submodules -->, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
+You'll need `pkg-config`, `libzfslinux-dev`, `libtss2-dev`<!-- , to initialise the submodules -->, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
 The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + TPM back-end.
 
 ### Installation

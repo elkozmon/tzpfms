@@ -63,9 +63,8 @@ $(subst $(MANDIR),$(OUTDIR)man/,$(MANPAGE_SOURCES)) : $(MANDIR)index.txt $(MANPA
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXAR) -o$@ $^ $(PIC) $(LDAR)
+	$(CXX) $(CXXAR) -o$@ $^ $(PIC) -Wl,--as-needed $(LDAR)
 	$(STRIP) $(STRIPAR) $@
-	$(LDD) --unused $@ | $(AWK) -F/ 'BEGIN {args = ""}  /^\t/ {args = args " --remove-needed " $$NF}  END { if(!args) exit; print "$(PATCHELF)" args " $@"}' | sh -x
 
 $(OBJDIR)%$(OBJ) : $(SRCDIR)%.cpp
 	@mkdir -p $(dir $@)
