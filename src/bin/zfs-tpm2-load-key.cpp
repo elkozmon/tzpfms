@@ -24,7 +24,6 @@ int main(int argc, char ** argv) {
 	    [&](auto dataset) {
 		    char *backend{}, *handle_s{};
 		    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_BACKEND, backend));
-		    fprintf(stderr, "backend=%s\n", backend);
 
 		    if(!backend) {
 			    fprintf(stderr, "Dataset %s not encrypted with tzpfms!\n", zfs_get_name(dataset));

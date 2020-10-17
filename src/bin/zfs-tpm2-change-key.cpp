@@ -46,10 +46,7 @@ int main(int argc, char ** argv) {
 	return do_main(
 	    argc, argv, "b:", [&](auto) { backup = optarg; },
 	    [&](auto dataset) {
-		    if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) {
-			    fprintf(stderr, "Key change error: Key must be loaded.\n");  // mimic libzfs error output
-			    return __LINE__;
-		    }
+		    REQUIRE_KEY_LOADED(dataset);
 
 
 		    // https://software.intel.com/content/www/us/en/develop/articles/code-sample-protecting-secret-data-and-keys-using-intel-platform-trust-technology.html

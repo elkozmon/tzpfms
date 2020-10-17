@@ -18,8 +18,20 @@
 #define PROPNAME_KEY "xyz.nabijaczleweli:tzpfms.key"
 
 
+/// Mimic libzfs error output
+#define REQUIRE_KEY_LOADED(dataset)                                                  \
+	do {                                                                               \
+		if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) { \
+			fprintf(stderr, "Key change error: Key must be loaded.\n");                    \
+			return __LINE__;                                                               \
+		}                                                                                \
+	} while(0)
+
+
 /// Static nvlist with {keyformat=raw, keylocation=prompt}
 extern nvlist_t * rewrap_args();
+/// Static nvlist with {keyformat=passphrase, keylocation=prompt}
+extern nvlist_t * clear_rewrap_args();
 
 /// Extract user property name from ZFS property list from to out.
 ///
@@ -28,3 +40,6 @@ extern int lookup_userprop(nvlist_t * from, const char * name, char *& out);
 
 /// Set required decoding props on the dataset
 extern int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle);
+
+/// Remove decoding props from the dataset
+extern int clear_key_props(zfs_handle_t * from);

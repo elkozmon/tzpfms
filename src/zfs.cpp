@@ -30,6 +30,27 @@ nvlist_t * rewrap_args() {
 }
 
 
+static nvlist_t * crrargs{};
+static quickscope_wrapper crrargs_deleter{[] { nvlist_free(crrargs); }};
+nvlist_t * clear_rewrap_args() {
+	if(!crrargs)
+		if(auto err =
+		       [&] {
+			       TRY_NVL("allocate rewrap nvlist", nvlist_alloc(&crrargs, NV_UNIQUE_NAME, 0));
+			       TRY_NVL("add keyformat to rewrap nvlist", nvlist_add_string(crrargs, zfs_prop_to_name(ZFS_PROP_KEYFORMAT), "passphrase"));
+			       TRY_NVL("add keylocation to rewrap nvlist", nvlist_add_string(crrargs, zfs_prop_to_name(ZFS_PROP_KEYLOCATION), "prompt"));
+			       return 0;
+		       }();
+		   err && crrargs) {
+			nvlist_free(crrargs);
+			crrargs = nullptr;
+			errno   = err;
+		}
+
+	return crrargs;
+}
+
+
 #define TRY_LOOKUP(what, ...)             \
 	({                                      \
 		const auto _try_retl = (__VA_ARGS__); \
@@ -38,6 +59,7 @@ nvlist_t * rewrap_args() {
 		TRY_NVL(what, _try_retl);             \
 	})
 
+// TODO: how does this interact with nested datasets?
 int lookup_userprop(nvlist_t * from, const char * name, char *& out) {
 	// xyz.nabijaczleweli:tzpfms.key:
 	//   value: '76B0286BEB3FAF57536C47D9A2BAD38157FD522A75A59E72867BBFD6AF167395'
@@ -67,5 +89,12 @@ int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle) {
 
 	TRY("set tzpfms.{backend,key}", zfs_prop_set_list(on, props));
 
+	return 0;
+}
+
+
+int clear_key_props(zfs_handle_t * from) {
+	TRY("delete tzpfms.backend", zfs_prop_inherit(from, PROPNAME_BACKEND, B_FALSE));
+	TRY("delete tzpfms.key", zfs_prop_inherit(from, PROPNAME_KEY, B_FALSE));
 	return 0;
 }
