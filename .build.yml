@@ -12,7 +12,9 @@ tasks:
   - build-gcc: |
       cd tzpfms
       make
+      find out/ -maxdepth 1 -type f -exec readelf -d {} +
       make clean
   - build-clang: |
       cd tzpfms
       CC=clang CXX=clang++ make
+      find out/ -maxdepth 1 -type f -exec readelf -d {} +
