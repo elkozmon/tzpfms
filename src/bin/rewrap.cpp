@@ -5,6 +5,8 @@
 // #include <sys/zio_crypt.h>
 #define WRAPPING_KEY_LEN 32
 
+#include <algorithm>
+
 #include <tss2/tss2_common.h>
 #include <tss2/tss2_esys.h>
 #include <tss2/tss2_rc.h>
@@ -46,6 +48,12 @@ int main(int argc, char ** argv) {
 	return do_main(
 	    argc, argv, "b:", [&](auto) { backup = optarg; },
 	    [&](auto dataset) {
+		    if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) {
+			    fprintf(stderr, "Key change error: Key must be loaded.\n");  // mimic libzfs error output
+			    return __LINE__;
+		    }
+
+
 		    ESYS_CONTEXT * tpm2_ctx{};
 		    // https://software.intel.com/content/www/us/en/develop/articles/code-sample-protecting-secret-data-and-keys-using-intel-platform-trust-technology.html
 		    // tssstartup
@@ -107,7 +115,7 @@ int main(int argc, char ** argv) {
                                  TZPFMS_VERSION) +
 		                    1;
 		    metadata.size = metadata.size > sizeof(metadata.buffer) ? sizeof(metadata.buffer) : metadata.size;
-		    fprintf(stderr, "%d/%d: \"%s\"\n", metadata.size, sizeof(metadata.buffer), metadata.buffer);
+		    fprintf(stderr, "%d/%zu: \"%s\"\n", metadata.size, sizeof(metadata.buffer), metadata.buffer);
 
 		    {
 			    const TPM2B_SENSITIVE_CREATE primary_sens{};
@@ -197,25 +205,56 @@ int main(int argc, char ** argv) {
 			        Tss2_RC_Decode(Esys_Load(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, sealant_private, sealant_public, &sealed_handle)));
 		    }
 
-		    TPMI_DH_PERSISTENT persistent_handle = 0x81000001;
+		    TPMI_DH_PERSISTENT persistent_handle{};
+
+		    /// Find lowest unused persistent handle
+		    {
+			    TPMS_CAPABILITY_DATA * cap;  // TODO: check for more data?
+			    fprintf(stderr, "Esys_GetCapability() = %s\n",
+			            Tss2_RC_Decode(Esys_GetCapability(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, TPM2_CAP_HANDLES, TPM2_PERSISTENT_FIRST,
+			                                              TPM2_MAX_CAP_HANDLES, nullptr, &cap)));
+			    quickscope_wrapper cap_deleter{[=] { Esys_Free(cap); }};
+
+			    switch(cap->data.handles.count) {
+				    case 0:
+					    persistent_handle = TPM2_PERSISTENT_FIRST;
+					    break;
+				    case TPM2_MAX_CAP_HANDLES:
+					    break;
+				    default:
+					    for(TPM2_HC i = TPM2_PERSISTENT_FIRST; i <= TPM2_PERSISTENT_LAST && i <= TPM2_PLATFORM_PERSISTENT; ++i)
+						    if(std::find(std::begin(cap->data.handles.handle), std::end(cap->data.handles.handle), i) == std::end(cap->data.handles.handle)) {
+							    persistent_handle = i;
+							    break;
+						    }
+			    }
+
+			    if(!persistent_handle)
+				    fprintf(stderr, "All %zu persistent handles allocated! We're fucked!\n", TPM2_MAX_CAP_HANDLES);
+		    }
+
+		    fprintf(stderr, "0x%x\n", persistent_handle);
 
 		    /// Persist the loaded handle in the TPM — this will make it available as $persistent_handle until we explicitly evict it back to the transient store
 		    {
 			    // Can't be flushed (tpm:parameter(1):value is out of range or is not correct for the context), plus, that's kinda the point
-			    ESYS_TR new_handle = ESYS_TR_NONE;
+			    ESYS_TR new_handle;
 			    fprintf(stderr, "Esys_EvictControl() = %s\n",
 			            Tss2_RC_Decode(
 			                Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, sealed_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, persistent_handle, &new_handle)));
 		    }
 
-		    fprintf(stderr, "0x%x\n", persistent_handle);  // TODO: find first unused
-		                                                   // TODO: remove previous
+		    /// Free the persistent slot
+		    /*{
+		      // Neither of these are flushable (tpm:parameter(1):value is out of range or is not correct for the context)
+		      ESYS_TR pandle;
+		      fprintf(stderr, "Esys_TR_FromTPMPublic() = %s\n",
+		              Tss2_RC_Decode(Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle - 1, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle)));
 
-
-		    if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) {
-			    fprintf(stderr, "Key change error: Key must be loaded.\n");  // mimic libzfs error output
-			    return __LINE__;
-		    }
+		      ESYS_TR new_handle;
+		      fprintf(stderr, "Esys_EvictControl() = %s\n",
+		              Tss2_RC_Decode(Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0, &new_handle)));
+		    }*/
 
 
 		    // uint8_t wrap_key[WRAPPING_KEY_LEN];
@@ -226,7 +265,7 @@ int main(int argc, char ** argv) {
 		    char persistent_handle_s[2 + sizeof(persistent_handle) * 2 + 1];
 		    if(auto written = snprintf(persistent_handle_s, sizeof(persistent_handle_s), "0x%02X", persistent_handle);
 		       written < 0 || written >= static_cast<int>(sizeof(persistent_handle_s)))
-			    fprintf(stderr, "oops, truncated: %d/%d\n", written, sizeof(persistent_handle_s));
+			    fprintf(stderr, "oops, truncated: %d/%zu\n", written, sizeof(persistent_handle_s));
 		    TRY_MAIN(zfs_prop_set(dataset, "xyz.nabijaczleweli:tzpfms.key", persistent_handle_s));
 
 
