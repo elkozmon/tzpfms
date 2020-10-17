@@ -26,7 +26,7 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 
 int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length) {
 	TPM2B_DIGEST * rand{};
-	TRY_TPM2("Esys_GetRandom()", Esys_GetRandom(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, length, &rand));
+	TRY_TPM2("get random data from TPM", Esys_GetRandom(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, length, &rand));
 	quickscope_wrapper rand_deleter{[=] { Esys_Free(rand); }};
 
 	if(rand->size != length) {
@@ -41,7 +41,7 @@ int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length) {
 
 static int tpm2_find_unused_persistent_non_platform(ESYS_CONTEXT * tpm2_ctx, TPMI_DH_PERSISTENT & persistent_handle) {
 	TPMS_CAPABILITY_DATA * cap;  // TODO: check for more data?
-	TRY_TPM2("Esys_GetCapability()", Esys_GetCapability(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, TPM2_CAP_HANDLES, TPM2_PERSISTENT_FIRST,
+	TRY_TPM2("Read used persistent TPM handles", Esys_GetCapability(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, TPM2_CAP_HANDLES, TPM2_PERSISTENT_FIRST,
 	                                                    TPM2_MAX_CAP_HANDLES, nullptr, &cap));
 	quickscope_wrapper cap_deleter{[=] { Esys_Free(cap); }};
 
@@ -94,7 +94,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		TPM2B_CREATION_DATA * creation_data{};
 		TPM2B_DIGEST * creation_hash{};
 		TPMT_TK_CREATION * creation_ticket{};
-		TRY_TPM2("Esys_CreatePrimary()", Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata,
+		TRY_TPM2("create primary encryption key", Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata,
 		                                                    &pcrs, &primary_handle, &public_ret, &creation_data, &creation_hash, &creation_ticket));
 		quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
 		quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
@@ -140,7 +140,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		TPM2B_CREATION_DATA * creation_data{};
 		TPM2B_DIGEST * creation_hash{};
 		TPMT_TK_CREATION * creation_ticket{};
-		TRY_TPM2("Esys_Create()", Esys_Create(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &secret_sens, &pub, &metadata, &pcrs,
+		TRY_TPM2("create key seal", Esys_Create(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &secret_sens, &pub, &metadata, &pcrs,
 		                                      &sealant_private, &sealant_public, &creation_data, &creation_hash, &creation_ticket));
 		quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
 		quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
@@ -151,7 +151,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 	quickscope_wrapper sealed_handle_deleter{[&] { Esys_FlushContext(tpm2_ctx, sealed_handle); }};
 
 	/// Load the sealed object (keyedhash) into a transient handle
-	TRY_TPM2("Esys_Load()", Esys_Load(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, sealant_private, sealant_public, &sealed_handle));
+	TRY_TPM2("load key seal", Esys_Load(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, sealant_private, sealant_public, &sealed_handle));
 
 	/// Find lowest unused persistent handle
 	TRY_MAIN(tpm2_find_unused_persistent_non_platform(tpm2_ctx, persistent_handle));
@@ -160,20 +160,37 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 	{
 		// Can't be flushed (tpm:parameter(1):value is out of range or is not correct for the context), plus, that's kinda the point
 		ESYS_TR new_handle;
-		TRY_TPM2("Esys_EvictControl()",
+		TRY_TPM2("persist key seal",
 		         Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, sealed_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, persistent_handle, &new_handle));
 	}
 
 	return 0;
 }
 
+int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle, void * data, size_t data_len) {
+	// Entirely fake and not flushable (tpm:parameter(1):value is out of range or is not correct for the context)
+	ESYS_TR pandle;
+	TRY_TPM2("convert persistent handle to object", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
+
+	TPM2B_SENSITIVE_DATA * unsealed{};
+	TRY_TPM2("unseal data", Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed));
+	quickscope_wrapper unsealed_deleter{[=] { Esys_Free(unsealed); }};
+
+	if(unsealed->size != data_len) {
+		fprintf(stderr, "Unsealed data has wrong length %u, expected %zu!\n", unsealed->size, data_len);
+		return __LINE__;
+	}
+	memcpy(data, unsealed->buffer, data_len);
+	return 0;
+}
+
 int tpm2_free_persistent(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle) {
 	// Neither of these are flushable (tpm:parameter(1):value is out of range or is not correct for the context)
 	ESYS_TR pandle;
-	TRY_TPM2("Esys_TR_FromTPMPublic()", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
+	TRY_TPM2("convert persistent handle to object", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
 
 	ESYS_TR new_handle;
-	TRY_TPM2("Esys_EvictControl()", Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0, &new_handle));
+	TRY_TPM2("unpersist object", Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0, &new_handle));
 
 	return 0;
 }

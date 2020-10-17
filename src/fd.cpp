@@ -44,7 +44,7 @@ int read_exact(const char * path, void * data, size_t len) {
 
 
 int write_exact(const char * path, const void * data, size_t len, mode_t mode) {
-	auto outfd = TRY("open output file", open(path, O_WRONLY | O_CREAT | O_EXCL, mode));
+	auto outfd = TRY("create output file", open(path, O_WRONLY | O_CREAT | O_EXCL, mode));
 	quickscope_wrapper infd_deleter{[=] { close(outfd); }};
 
 	while(len) {

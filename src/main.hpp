@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 
-#define TRY_PTR(what, ...) TRY_GENERIC(what, !, , errno, __LINE__, __VA_ARGS__)
+#define TRY_PTR(what, ...) TRY_GENERIC(what, !, , errno, __LINE__, strerror, __VA_ARGS__)
 #define TRY_MAIN(...)                 \
 	do {                                \
 		if(auto _try_ret = (__VA_ARGS__)) \

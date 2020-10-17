@@ -9,7 +9,7 @@
 
 // Funxion statics pull in libc++'s __cxa_guard_acquire()
 static nvlist_t * rrargs{};
-static quickscope_wrapper ret_deleter{[] { nvlist_free(rrargs); }};
+static quickscope_wrapper rrargs_deleter{[] { nvlist_free(rrargs); }};
 nvlist_t * rewrap_args() {
 	if(!rrargs)
 		if(auto err =
@@ -22,8 +22,8 @@ nvlist_t * rewrap_args() {
 		       }();
 		   err && rrargs) {
 			nvlist_free(rrargs);
-			rrargs   = nullptr;
-			errno = err;
+			rrargs = nullptr;
+			errno  = err;
 		}
 
 	return rrargs;
@@ -46,5 +46,26 @@ int lookup_userprop(nvlist_t * from, const char * name, char *& out) {
 	nvlist_t * vs{};
 	TRY_LOOKUP("look up user property", nvlist_lookup_nvlist(from, name, &vs));
 	TRY_LOOKUP("look up user property value", nvlist_lookup_string(vs, "value", &out));
+	return 0;
+}
+
+
+int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle) {
+	char handle_s[2 + sizeof(handle) * 2 + 1];
+	if(auto written = snprintf(handle_s, sizeof(handle_s), "0x%02X", handle); written < 0 || written >= static_cast<int>(sizeof(handle_s))) {
+		fprintf(stderr, "Truncated handle name? %d/%zu\n", written, sizeof(handle_s));
+		return __LINE__;
+	}
+
+
+	nvlist_t * props{};
+	quickscope_wrapper props_deleter{[&] { nvlist_free(props); }};
+
+	TRY_NVL("allocate key nvlist", nvlist_alloc(&props, NV_UNIQUE_NAME, 0));
+	TRY_NVL("add back-end to key nvlist", nvlist_add_string(props, PROPNAME_BACKEND, backend));
+	TRY_NVL("add handle to key nvlist", nvlist_add_string(props, PROPNAME_KEY, handle_s));
+
+	TRY("set tzpfms.{backend,key}", zfs_prop_set_list(on, props));
+
 	return 0;
 }

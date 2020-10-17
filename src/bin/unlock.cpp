@@ -2,59 +2,19 @@
 
 
 #include <libzfs.h>
+// #include <sys/zio_crypt.h>
+#define WRAPPING_KEY_LEN 32
 
 #include <stdio.h>
 
 #include "../fd.hpp"
 #include "../main.hpp"
+#include "../parse.hpp"
+#include "../tpm2.hpp"
 #include "../zfs.hpp"
 
 
-static int hex_nibble(char c) {
-	switch(c) {
-		case '0':
-			return 0x0;
-		case '1':
-			return 0x1;
-		case '2':
-			return 0x2;
-		case '3':
-			return 0x3;
-		case '4':
-			return 0x4;
-		case '5':
-			return 0x5;
-		case '6':
-			return 0x6;
-		case '7':
-			return 0x7;
-		case '8':
-			return 0x8;
-		case '9':
-			return 0x9;
-		case 'A':
-		case 'a':
-			return 0xA;
-		case 'B':
-		case 'b':
-			return 0xB;
-		case 'C':
-		case 'c':
-			return 0xC;
-		case 'D':
-		case 'd':
-			return 0xD;
-		case 'E':
-		case 'e':
-			return 0xE;
-		case 'F':
-		case 'f':
-			return 0xF;
-		default:
-			fprintf(stderr, "Character %c (0x%02X) not hex?\n", c, static_cast<int>(c));
-			return 0;
-	}
-}
+#define THIS_BACKEND "TPM2"
 
 
 int main(int argc, char ** argv) {
@@ -62,23 +22,41 @@ int main(int argc, char ** argv) {
 	return do_main(
 	    argc, argv, "n", [&](auto) { noop = B_TRUE; },
 	    [&](auto dataset) {
-		    char * stored_key_s{};
-		    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), "xyz.nabijaczleweli:tzpfms.key", stored_key_s));
-		    errno = EEXIST;
-		    TRY_PTR("find encryption key prop", stored_key_s);
+		    char *backend{}, *handle_s{};
+		    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_BACKEND, backend));
+		    fprintf(stderr, "backend=%s\n", backend);
 
-		    auto stored_key_len = strlen(stored_key_s) / 2;
-		    auto stored_key     = static_cast<uint8_t *>(TRY_PTR("stored_key", alloca(stored_key_len)));
-		    {
-			    auto cur = stored_key_s;
-			    for(auto kcur = stored_key; kcur < stored_key + stored_key_len; ++kcur) {
-				    *kcur      = (hex_nibble(cur[0]) << 4) | hex_nibble(cur[1]);
-				    cur += 2;
-			    }
+		    if(!backend) {
+			    fprintf(stderr, "Dataset %s not encrypted with tzpfms!\n", zfs_get_name(dataset));
+			    return __LINE__;
+		    }
+		    if(strcmp(backend, THIS_BACKEND)) {
+			    fprintf(stderr, "Dataset %s encrypted with tzpfms back-end %s, but we are %s.\n", zfs_get_name(dataset), backend, THIS_BACKEND);
+			    return __LINE__;
 		    }
 
+		    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_KEY, handle_s));
+		    if(!handle_s) {
+			    fprintf(stderr, "Dataset %s missing key data.\n", zfs_get_name(dataset));
+			    return __LINE__;
+		    }
+
+		    TPMI_DH_PERSISTENT handle{};
+		    if(parse_int(handle_s, handle)) {
+			    fprintf(stderr, "Dataset %s's handle %s not valid.\n", zfs_get_name(dataset), handle_s);
+			    return __LINE__;
+		    }
+
+
+		    uint8_t wrap_key[WRAPPING_KEY_LEN];
+		    TRY_MAIN(with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
+			    TRY_MAIN(tpm2_unseal(tpm2_ctx, tpm2_session, handle, wrap_key, sizeof(wrap_key)));
+			    return 0;
+		    }));
+
+
 		    int key_fd;
-		    TRY_MAIN(filled_fd(key_fd, (void *)stored_key, stored_key_len));
+		    TRY_MAIN(filled_fd(key_fd, (void *)wrap_key, sizeof(wrap_key)));
 		    quickscope_wrapper key_fd_deleter{[=] { close(key_fd); }};
 
 
@@ -86,7 +64,7 @@ int main(int argc, char ** argv) {
 			    if(zfs_crypto_load_key(dataset, noop, nullptr))
 				    return __LINE__;  // Error printed by libzfs
 			    else
-				    printf("Key for %s loaded\n", zfs_get_name(dataset));
+				    printf("Key for %s %s\n", zfs_get_name(dataset), noop ? "OK" : "loaded");
 
 			    return 0;
 		    }));
