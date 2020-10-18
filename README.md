@@ -20,7 +20,7 @@ The output binaries are trimmed of extraneous dependencies, so they're all just 
 ### Installation
 
 Copy the `out/zfs-tpm*` binaries corresponding to the back-ends you want to `/sbin`,
-continue as the [manpage](//git.sr.ht/~nabijaczleweli/tzpfms/tree/trunk/man/zfs-tpm2-change-key.md) instructs,
+continue as the [manpage](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man/zfs-tpm2-change-key.md) instructs.
 
 <!-- #### From Debian repository
 
