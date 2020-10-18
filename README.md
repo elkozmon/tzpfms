@@ -14,7 +14,7 @@ Plus it's a pretty good annoyed sigh onomatopoeia.
 
 ### Building
 
-You'll need `pkg-config`, `ronn`, `libzfslinux-dev`, `libtss2-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
+You'll need `pkg-config`, `ronn`, `libzfslinux-dev`, `libtss2-dev`, `libtspi-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
 The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + TPM back-end.
 
 ### Installation
@@ -50,14 +50,29 @@ See the [repository README](//debian.nabijaczleweli.xyz/README) for more informa
 
 Build [`swtpm`](//github.com/stefanberger/swtpm), then prepare and run it:
 ```sh
-swtpm_setup --tpmstate tpm-state --tpm2 --createek --display --logfile /dev/stdout --overwrite
-swtpm socket --server type=tcp,port=2321 --ctrl type=tcp,port=2322 --tpm2 --tpmstate dir=tpm-state --flags not-need-init --log level=10
+swtpm_setup --tpmstate tpm2-state --tpm2 --createek --display --logfile /dev/stdout --overwrite
+swtpm socket --server type=tcp,port=2321 --ctrl type=tcp,port=2322 --tpm2 --tpmstate dir=tpm2-state --flags not-need-init --log level=10
 ```
 
 If your platform has a TPM, switch to `swtpm` by default:
 ```
 ln -s /usr/lib/i386-linux-gnu/libtss2-tcti-{swtpm,default}.so
 ```
+#### TPM1.x
+
+Build [`swtpm`](//github.com/stefanberger/swtpm), then prepare and run it and
+([hopefully](https://github.com/stefanberger/swtpm/issues/5#issuecomment-210607890)) [TrouSerS](//sourceforge.net/projects/trousers), as `root`/`tpm`:
+```sh
+swtpm_setup --tpmstate tpm1x-state --createek --display --logfile /dev/stdout --overwrite
+swtpm cuse -n tpm --tpmstate dir=tpm1x-state --seccomp action=none --log level=10,file=/dev/fd/4 4>&1
+swtpm_ioctl -i /dev/tpm
+TPM_DEVICE=/dev/tpm swtpm_bios
+tcsd -f
+
+swtpm_ioctl -s /dev/tpm  # to shut down, apparently
+```
+
+If your platform has a TPM, occupy it first by running `exec 100<>/dev/tpm0` or equivalent. `tcsd` looks at `/dev/tpm0` before `/dev/tpm`.
 
 ## Reporting bugs
 

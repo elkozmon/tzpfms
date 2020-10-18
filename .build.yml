@@ -5,6 +5,7 @@ packages:
   - clang
   - pkg-config
   - libtss2-dev
+  - libtspi-dev
   - ronn
 tasks:
   - get-zfs: |
