@@ -15,7 +15,7 @@
 
 int main(int argc, char ** argv) {
 	return do_main(
-	    argc, argv, "", [&](auto) {},
+	    argc, argv, "", "", [&](auto) {},
 	    [&](auto dataset) {
 		    REQUIRE_KEY_LOADED(dataset);
 

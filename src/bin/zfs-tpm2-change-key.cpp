@@ -44,7 +44,7 @@ slice_iter<uint8_t> end(TPM2B_DIGEST & dg) {
 int main(int argc, char ** argv) {
 	const char * backup{};
 	return do_main(
-	    argc, argv, "b:", [&](auto) { backup = optarg; },
+	    argc, argv, "b:", "[-b backup-file]", [&](auto) { backup = optarg; },
 	    [&](auto dataset) {
 		    REQUIRE_KEY_LOADED(dataset);
 

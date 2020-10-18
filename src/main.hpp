@@ -19,7 +19,7 @@
 
 
 template <class G, class M>
-int do_main(int argc, char ** argv, const char * getoptions, G && getoptfn, M && main) {
+int do_main(int argc, char ** argv, const char * getoptions, const char * usage, G && getoptfn, M && main) {
 	const auto libz = TRY_PTR("initialise libzfs", libzfs_init());
 	quickscope_wrapper libz_deleter{[=] { libzfs_fini(libz); }};
 
@@ -28,14 +28,26 @@ int do_main(int argc, char ** argv, const char * getoptions, G && getoptfn, M &&
 #if __GLIBC__
 	setenv("POSIXLY_CORRECT", "1", true);
 #endif
-	for(int opt; (opt = getopt(argc, argv, getoptions)) != -1;)
-		if(opt == '?')
-			return __LINE__;
-		else
-			getoptfn(opt);
+	auto gopts = reinterpret_cast<char *>(TRY_PTR("allocate options string", alloca(strlen(getoptions) + 2 + 1)));
+	snprintf(gopts, strlen(getoptions) + 2 + 1, "%shV", getoptions);
+	for(int opt; (opt = getopt(argc, argv, gopts)) != -1;)
+		switch(opt) {
+			case '?':
+			case 'h':
+				fprintf(opt == 'h' ? stdout : stderr, "Usage: %s [-hV] %s%s<dataset>\n", argv[0], usage, strlen(usage) ? " " : "");
+				return opt == 'h' ? 0 : __LINE__;
+			case 'V':
+				printf("tzpfms version %s\n", TZPFMS_VERSION);
+				return 0;
+			default:
+				getoptfn(opt);
+		}
 
 	if(optind >= argc) {
-		fprintf(stderr, "No dataset to act on?\n");
+		fprintf(stderr,
+		        "No dataset to act on?\n"
+		        "Usage: %s [-hV] %s%s<dataset>\n",
+		        argv[0], usage, strlen(usage) ? " " : "");
 		return __LINE__;
 	}
 	auto dataset = TRY_PTR(nullptr, zfs_open(libz, argv[optind], ZFS_TYPE_FILESYSTEM));

@@ -19,7 +19,7 @@
 int main(int argc, char ** argv) {
 	auto noop = B_FALSE;
 	return do_main(
-	    argc, argv, "n", [&](auto) { noop = B_TRUE; },
+	    argc, argv, "n", "[-n]", [&](auto) { noop = B_TRUE; },
 	    [&](auto dataset) {
 		    TPMI_DH_PERSISTENT handle{};
 		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, handle));
