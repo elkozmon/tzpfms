@@ -1,7 +1,7 @@
 # tzpfms [![builds.sr.ht badge](//builds.sr.ht/~nabijaczleweli/tzpfms.svg)](https://builds.sr.ht/~nabijaczleweli/tzpfms) [![Licence](//img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 TPM-based encryption keys for ZFS datasets.
 
-## [Manpage](//git.sr.ht/~nabijaczleweli/tzpfms-man#NAME)
+## [Manpages](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man)
 
 ### Why?
 
@@ -14,12 +14,13 @@ Plus it's a pretty good annoyed sigh onomatopoeia.
 
 ### Building
 
-You'll need `pkg-config`, `libzfslinux-dev`, `libtss2-dev`<!-- , to initialise the submodules -->, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
-The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + TPM back-end, if any.
+You'll need `pkg-config`, `libzfslinux-dev`, `libtss2-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
+The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + TPM back-end.
 
 ### Installation
 
-Copy `out/tzpfms` to `/sbin` and write a `/etc/tzpfms/{description,cmdline}`, as seen in the [manpage](//git.sr.ht/~nabijaczleweli/tzpfms/tree/trunk/man/tzpfms.md),
+Copy the `out/zfs-tpm*` binaries corresponding to the back-ends you want to `/sbin`,
+continue as the [manpage](//git.sr.ht/~nabijaczleweli/tzpfms/tree/trunk/man/zfs-tpm2-change-key.md) instructs,
 
 <!-- #### From Debian repository
 
@@ -46,13 +47,13 @@ See the [repository README](//debian.nabijaczleweli.xyz/README) for more informa
 
 ## Reporting bugs
 
-<!-- There's [the tracker](//todo.sr.ht/~nabijaczleweli/tzpfms), but also see the list below. -->
+There's [the tracker](//todo.sr.ht/~nabijaczleweli/tzpfms), but also see the list below.
 
 ## Contributing
 
-<!-- Send a patch inline, as an attachment, or a git link and a ref to pull from to
+Send a patch inline, as an attachment, or a git link and a ref to pull from to
 [the list](//lists.sr.ht/~nabijaczleweli/tzpfms) ([~nabijaczleweli/tzpfms@lists.sr.ht](mailto:~nabijaczleweli/tzpfms)) or [me](mailto:nabijaczleweli@nabijaczleweli.xyz)
-directly. I'm not picky, just please include the repo name in the subject prefix. -->
+directly. I'm not picky, just please include the repo name in the subject prefix.
 
 ## Discussion
 

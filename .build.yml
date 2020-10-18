@@ -1,4 +1,6 @@
 image: debian/sid
+secrets:
+  - ccb6777e-650b-4fa2-87e1-e2342f5bb605  # tzpfms SSH key
 packages:
   - clang
   - pkg-config
@@ -18,3 +20,15 @@ tasks:
       cd tzpfms
       CC=clang CXX=clang++ make
       find out/ -maxdepth 1 -type f -exec readelf -d {} +
+  - manpages: |
+      git -C tzpfms/ worktree add ../tzpfms-man man
+      cd tzpfms-man
+      git ls-tree -z --name-only HEAD | xargs -0 rm -r
+      mv ../tzpfms/out/man/* .
+      git add .
+      git config user.email "nabijaczleweli/autouploader@nabijaczleweli.xyz"
+      git config user.name "наб autouploader"
+      git commit -m "Manpage update by job $JOB_ID" || exit 0
+      git remote set-url origin 'git@git.sr.ht:~nabijaczleweli/tzpfms'
+      ssh-keyscan git.sr.ht > ~/.ssh/known_hosts
+      git push
