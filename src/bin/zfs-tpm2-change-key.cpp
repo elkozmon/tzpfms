@@ -17,28 +17,6 @@
 #define THIS_BACKEND "TPM2"
 
 
-template <class T>
-struct slice_iter {
-	T * data;
-	size_t len;
-
-	T & operator*() { return *this->data; }
-	bool operator!=(const slice_iter & other) { return this->data != other.data || this->len != other.len; }
-	slice_iter operator++() {
-		++this->data;
-		--this->len;
-		return *this;
-	}
-};
-
-slice_iter<uint8_t> begin(TPM2B_DIGEST & dg) {
-	return {&dg.buffer[0], dg.size};
-}
-slice_iter<uint8_t> end(TPM2B_DIGEST & dg) {
-	return {dg.buffer + dg.size, 0};
-}
-
-
 int main(int argc, char ** argv) {
 	const char * backup{};
 	return do_main(
