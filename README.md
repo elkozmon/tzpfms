@@ -45,6 +45,20 @@ will work on amd64, x32, and i386.
 
 See the [repository README](//debian.nabijaczleweli.xyz/README) for more information. -->
 
+### Testing
+#### TPM2
+
+Build [`swtpm`](//github.com/stefanberger/swtpm), then prepare and run it:
+```sh
+swtpm_setup --tpmstate tpm-state --tpm2 --createek --display --logfile /dev/stdout --overwrite
+swtpm socket --server type=tcp,port=2321 --ctrl type=tcp,port=2322 --tpm2 --tpmstate dir=tpm-state --flags not-need-init --log level=10
+```
+
+If your platform has a TPM, switch to `swtpm` by default:
+```
+ln -s /usr/lib/i386-linux-gnu/libtss2-tcti-{swtpm,default}.so
+```
+
 ## Reporting bugs
 
 There's [the tracker](//todo.sr.ht/~nabijaczleweli/tzpfms), but also see the list below.

@@ -13,8 +13,6 @@
 #include "../tpm2.hpp"
 #include "../zfs.hpp"
 
-// ./src/swtpm/swtpm socket --server port=2321 --ctrl type=tcp,port=2322 --tpm2
-
 
 #define THIS_BACKEND "TPM2"
 
