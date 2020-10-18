@@ -3,8 +3,12 @@
 
 #include "zfs.hpp"
 #include "common.hpp"
+#include "main.hpp"
+#include "parse.hpp"
 
 #include <libzfs.h>
+
+#include <string.h>
 
 
 // Funxion statics pull in libc++'s __cxa_guard_acquire()
@@ -59,14 +63,19 @@ nvlist_t * clear_rewrap_args() {
 		TRY_NVL(what, _try_retl);             \
 	})
 
-// TODO: how does this interact with nested datasets?
-int lookup_userprop(nvlist_t * from, const char * name, char *& out) {
+int lookup_userprop(zfs_handle_t * in, const char * name, char *& out) {
 	// xyz.nabijaczleweli:tzpfms.key:
 	//   value: '76B0286BEB3FAF57536C47D9A2BAD38157FD522A75A59E72867BBFD6AF167395'
 	//   source: 'owo/enc'
 
 	nvlist_t * vs{};
-	TRY_LOOKUP("look up user property", nvlist_lookup_nvlist(from, name, &vs));
+	TRY_LOOKUP("look up user property", nvlist_lookup_nvlist(zfs_get_user_props(in), name, &vs));
+
+	char * source{};
+	TRY_LOOKUP("look up user property source", nvlist_lookup_string(vs, "source", &source));
+	if(!source || strcmp(source, zfs_get_name(in)))
+		return 0;
+
 	TRY_LOOKUP("look up user property value", nvlist_lookup_string(vs, "value", &out));
 	return 0;
 }
@@ -96,5 +105,33 @@ int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle) {
 int clear_key_props(zfs_handle_t * from) {
 	TRY("delete tzpfms.backend", zfs_prop_inherit(from, PROPNAME_BACKEND, B_FALSE));
 	TRY("delete tzpfms.key", zfs_prop_inherit(from, PROPNAME_KEY, B_FALSE));
+	return 0;
+}
+
+
+int parse_key_props(zfs_handle_t * in, const char * our_backend, uint32_t & handle) {
+	char *backend{}, *handle_s{};
+	TRY_MAIN(lookup_userprop(in, PROPNAME_BACKEND, backend));
+
+	if(!backend) {
+		fprintf(stderr, "Dataset %s not encrypted with tzpfms!\n", zfs_get_name(in));
+		return __LINE__;
+	}
+	if(strcmp(backend, our_backend)) {
+		fprintf(stderr, "Dataset %s encrypted with tzpfms back-end %s, but we are %s.\n", zfs_get_name(in), backend, our_backend);
+		return __LINE__;
+	}
+
+	TRY_MAIN(lookup_userprop(in, PROPNAME_KEY, handle_s));
+	if(!handle_s) {
+		fprintf(stderr, "Dataset %s missing key data.\n", zfs_get_name(in));
+		return __LINE__;
+	}
+
+	if(parse_int(handle_s, handle)) {
+		fprintf(stderr, "Dataset %s's handle %s not valid.\n", zfs_get_name(in), handle_s);
+		return __LINE__;
+	}
+
 	return 0;
 }

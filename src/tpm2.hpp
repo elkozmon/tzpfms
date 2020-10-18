@@ -6,6 +6,8 @@
 
 #include "common.hpp"
 
+#include <libzfs.h>
+
 #include <tss2/tss2_common.h>
 #include <tss2/tss2_esys.h>
 #include <tss2/tss2_rc.h>

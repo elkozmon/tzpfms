@@ -9,7 +9,6 @@
 
 #include "../fd.hpp"
 #include "../main.hpp"
-#include "../parse.hpp"
 #include "../tpm2.hpp"
 #include "../zfs.hpp"
 
@@ -22,29 +21,8 @@ int main(int argc, char ** argv) {
 	return do_main(
 	    argc, argv, "n", [&](auto) { noop = B_TRUE; },
 	    [&](auto dataset) {
-		    char *backend{}, *handle_s{};
-		    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_BACKEND, backend));
-
-		    if(!backend) {
-			    fprintf(stderr, "Dataset %s not encrypted with tzpfms!\n", zfs_get_name(dataset));
-			    return __LINE__;
-		    }
-		    if(strcmp(backend, THIS_BACKEND)) {
-			    fprintf(stderr, "Dataset %s encrypted with tzpfms back-end %s, but we are %s.\n", zfs_get_name(dataset), backend, THIS_BACKEND);
-			    return __LINE__;
-		    }
-
-		    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_KEY, handle_s));
-		    if(!handle_s) {
-			    fprintf(stderr, "Dataset %s missing key data.\n", zfs_get_name(dataset));
-			    return __LINE__;
-		    }
-
 		    TPMI_DH_PERSISTENT handle{};
-		    if(parse_int(handle_s, handle)) {
-			    fprintf(stderr, "Dataset %s's handle %s not valid.\n", zfs_get_name(dataset), handle_s);
-			    return __LINE__;
-		    }
+		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, handle));
 
 
 		    uint8_t wrap_key[WRAPPING_KEY_LEN];

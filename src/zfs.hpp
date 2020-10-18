@@ -6,9 +6,6 @@
 
 #include <libzfs.h>
 #include <sys/nvpair.h>
-// #include <sys/fs/zfs.h>
-//// #include <sys/zio_crypt.h>
-// #define WRAPPING_KEY_LEN 32
 
 
 #define TRY_NVL(what, ...) TRY_GENERIC(what, , , _try_ret, _try_ret, strerror, __VA_ARGS__)
@@ -36,10 +33,13 @@ extern nvlist_t * clear_rewrap_args();
 /// Extract user property name from ZFS property list from to out.
 ///
 /// Returns success but does not touch out on not found.
-extern int lookup_userprop(nvlist_t * from, const char * name, char *& out);
+extern int lookup_userprop(zfs_handle_t * from, const char * name, char *& out);
 
 /// Set required decoding props on the dataset
 extern int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle);
 
 /// Remove decoding props from the dataset
 extern int clear_key_props(zfs_handle_t * from);
+
+/// Read in decoding props from the dataset
+extern int parse_key_props(zfs_handle_t * in, const char * our_backend, uint32_t & handle);

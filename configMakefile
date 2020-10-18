@@ -52,7 +52,6 @@ TZPFMS_VERSION := "0.0.0-$(shell git rev-list HEAD --count)"
 INCCMAKEAR := CXXFLAGS="$(INCCXXAR)"
 LNCMAKEAR := LDFLAGS="$(LNCXXAR)"
 
-LDD ?= ldd
 AWK ?= awk
 RONN ?= ronn
 OBJ := .o

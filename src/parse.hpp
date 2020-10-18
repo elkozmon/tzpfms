@@ -6,6 +6,7 @@
 
 #include <charconv>
 #include <stdio.h>
+#include <string.h>
 
 
 template <class T>

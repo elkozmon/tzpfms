@@ -62,8 +62,8 @@ int main(int argc, char ** argv) {
 
 		    TRY_MAIN(with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
 			    char *previous_backend{}, *previous_handle_s{};
-			    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_BACKEND, previous_backend));
-			    TRY_MAIN(lookup_userprop(zfs_get_user_props(dataset), PROPNAME_KEY, previous_handle_s));
+			    TRY_MAIN(lookup_userprop(dataset, PROPNAME_BACKEND, previous_backend));
+			    TRY_MAIN(lookup_userprop(dataset, PROPNAME_KEY, previous_handle_s));
 			    if(!!previous_backend ^ !!previous_handle_s)
 				    fprintf(stderr, "Inconsistent tzpfms metadata for %s: back-end is %s, but handle is %s?\n", zfs_get_name(dataset), previous_backend,
 				            previous_handle_s);
@@ -98,6 +98,9 @@ int main(int argc, char ** argv) {
 			    quickscope_wrapper persistent_clearer{[&] {
 				    if(!ok && tpm2_free_persistent(tpm2_ctx, tpm2_session, persistent_handle))
 					    fprintf(stderr, "Couldn't free persistent handle. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n", persistent_handle);
+				    if(!ok && clear_key_props(dataset))  // Sync with zfs-tpm2-clear-key
+					    fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(dataset), PROPNAME_KEY,
+					            zfs_get_name(dataset));
 			    }};
 
 			    TRY_MAIN(set_key_props(dataset, THIS_BACKEND, persistent_handle));
