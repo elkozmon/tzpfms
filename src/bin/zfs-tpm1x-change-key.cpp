@@ -40,7 +40,7 @@ int main(int argc, char ** argv) {
 		    REQUIRE_KEY_LOADED(dataset);
 
 
-		    /// Mostly based on See tpm_sealdata(1) from tpm-tools.
+		    /// Mostly based on tpm_sealdata(1) from tpm-tools.
 
 		    // All memory lives as long as this does
 		    TSS_HCONTEXT ctx{};
@@ -116,7 +116,7 @@ int main(int argc, char ** argv) {
 		    fprintf(stderr, "Tspi_Policy_AssignToObject(sealed_object) = %s\n",
 		            Trspi_Error_String(Tspi_Policy_AssignToObject(sealed_object_policy, sealed_object)));
 		    fprintf(stderr, "Tspi_Policy_SetSecret(sealing_secret) = %s\n",
-		            Trspi_Error_String(Tspi_Policy_SetSecret(srk_policy, TSS_SECRET_MODE_SHA1, sizeof(sealing_secret), (uint8_t *)sealing_secret)));
+		            Trspi_Error_String(Tspi_Policy_SetSecret(sealed_object_policy, TSS_SECRET_MODE_SHA1, sizeof(sealing_secret), (uint8_t *)sealing_secret)));
 
 		    TSS_HKEY bound_pcrs{};
 		    fprintf(stderr, "Tspi_Context_CreateObject() = %s\n",
