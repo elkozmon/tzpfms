@@ -79,7 +79,15 @@ int main(int argc, char ** argv) {
 					            zfs_get_name(dataset));
 			    }};
 
-			    TRY_MAIN(set_key_props(dataset, THIS_BACKEND, persistent_handle));
+			    {
+				    char persistent_handle_s[2 + sizeof(persistent_handle) * 2 + 1];
+				    if(auto written = snprintf(persistent_handle_s, sizeof(persistent_handle_s), "0x%X", persistent_handle);
+				       written < 0 || written >= static_cast<int>(sizeof(persistent_handle_s))) {
+					    fprintf(stderr, "Truncated persistent_handle name? %d/%zu\n", written, sizeof(persistent_handle_s));
+					    return __LINE__;
+				    }
+				    TRY_MAIN(set_key_props(dataset, THIS_BACKEND, persistent_handle_s));
+			    }
 
 			    /// zfs_crypto_rewrap() with "prompt" reads from stdin, but not if it's a TTY;
 			    /// this user-proofs the set-up, and means we don't have to touch the filesysten:

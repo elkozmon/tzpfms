@@ -36,7 +36,7 @@ extern nvlist_t * clear_rewrap_args();
 extern int lookup_userprop(zfs_handle_t * from, const char * name, char *& out);
 
 /// Set required decoding props on the dataset
-extern int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle);
+extern int set_key_props(zfs_handle_t * on, const char * backend, const char * handle);
 
 /// Remove decoding props from the dataset
 extern int clear_key_props(zfs_handle_t * from);

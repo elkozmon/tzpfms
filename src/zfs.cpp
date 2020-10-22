@@ -81,20 +81,13 @@ int lookup_userprop(zfs_handle_t * in, const char * name, char *& out) {
 }
 
 
-int set_key_props(zfs_handle_t * on, const char * backend, uint32_t handle) {
-	char handle_s[2 + sizeof(handle) * 2 + 1];
-	if(auto written = snprintf(handle_s, sizeof(handle_s), "0x%02X", handle); written < 0 || written >= static_cast<int>(sizeof(handle_s))) {
-		fprintf(stderr, "Truncated handle name? %d/%zu\n", written, sizeof(handle_s));
-		return __LINE__;
-	}
-
-
-	nvlist_t * props{};
+int set_key_props(zfs_handle_t * on, const char * backend, const char * handle) {
+		nvlist_t * props{};
 	quickscope_wrapper props_deleter{[&] { nvlist_free(props); }};
 
 	TRY_NVL("allocate key nvlist", nvlist_alloc(&props, NV_UNIQUE_NAME, 0));
 	TRY_NVL("add back-end to key nvlist", nvlist_add_string(props, PROPNAME_BACKEND, backend));
-	TRY_NVL("add handle to key nvlist", nvlist_add_string(props, PROPNAME_KEY, handle_s));
+	TRY_NVL("add handle to key nvlist", nvlist_add_string(props, PROPNAME_KEY, handle));
 
 	TRY("set tzpfms.{backend,key}", zfs_prop_set_list(on, props));
 
