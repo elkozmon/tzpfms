@@ -89,24 +89,7 @@ int main(int argc, char ** argv) {
 				    TRY_MAIN(set_key_props(dataset, THIS_BACKEND, persistent_handle_s));
 			    }
 
-			    /// zfs_crypto_rewrap() with "prompt" reads from stdin, but not if it's a TTY;
-			    /// this user-proofs the set-up, and means we don't have to touch the filesysten:
-			    /// instead, get an FD, write the raw key data there, dup() it onto stdin,
-			    /// let libzfs read it, then restore stdin
-
-			    int key_fd;
-			    TRY_MAIN(filled_fd(key_fd, wrap_key, WRAPPING_KEY_LEN));
-			    quickscope_wrapper key_fd_deleter{[=] { close(key_fd); }};
-
-
-			    TRY_MAIN(with_stdin_at(key_fd, [&] {
-				    if(zfs_crypto_rewrap(dataset, TRY_PTR("get rewrap args", rewrap_args()), B_FALSE))
-					    return __LINE__;  // Error printed by libzfs
-				    else
-					    printf("Key for %s changed\n", zfs_get_name(dataset));
-
-				    return 0;
-			    }));
+			    TRY_MAIN(change_key(dataset, wrap_key));
 
 			    ok = true;
 			    return 0;

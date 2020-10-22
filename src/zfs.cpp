@@ -4,7 +4,6 @@
 #include "zfs.hpp"
 #include "common.hpp"
 #include "main.hpp"
-#include "parse.hpp"
 
 #include <libzfs.h>
 
@@ -102,8 +101,8 @@ int clear_key_props(zfs_handle_t * from) {
 }
 
 
-int parse_key_props(zfs_handle_t * in, const char * our_backend, uint32_t & handle) {
-	char *backend{}, *handle_s{};
+int parse_key_props(zfs_handle_t * in, const char * our_backend, char *& handle) {
+	char *backend{};
 	TRY_MAIN(lookup_userprop(in, PROPNAME_BACKEND, backend));
 
 	if(!backend) {
@@ -115,14 +114,9 @@ int parse_key_props(zfs_handle_t * in, const char * our_backend, uint32_t & hand
 		return __LINE__;
 	}
 
-	TRY_MAIN(lookup_userprop(in, PROPNAME_KEY, handle_s));
-	if(!handle_s) {
+	TRY_MAIN(lookup_userprop(in, PROPNAME_KEY, handle));
+	if(!handle) {
 		fprintf(stderr, "Dataset %s missing key data.\n", zfs_get_name(in));
-		return __LINE__;
-	}
-
-	if(parse_int(handle_s, handle)) {
-		fprintf(stderr, "Dataset %s's handle %s not valid.\n", zfs_get_name(in), handle_s);
 		return __LINE__;
 	}
 

@@ -46,6 +46,9 @@ int with_tpm2_session(F && func) {
 
 extern TPM2B_DATA tpm2_creation_metadata(const char * dataset_name);
 
+/// Parse a persistent handle name as stored in a ZFS property
+extern int tpm2_parse_handle(const char * dataset_name, const char * handle_s, TPMI_DH_PERSISTENT & handle);
+
 extern int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length);
 extern int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT & persistent_handle, const TPM2B_DATA & metadata, void * data, size_t data_len);
 extern int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle, void * data, size_t data_len);

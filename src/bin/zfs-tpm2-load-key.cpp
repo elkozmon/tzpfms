@@ -17,12 +17,15 @@
 
 
 int main(int argc, char ** argv) {
-	auto noop = B_FALSE;
+	auto noop = false;
 	return do_main(
-	    argc, argv, "n", "[-n]", [&](auto) { noop = B_TRUE; },
+	    argc, argv, "n", "[-n]", [&](auto) { noop = true; },
 	    [&](auto dataset) {
+		    char * handle_s{};
+		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, handle_s));
+
 		    TPMI_DH_PERSISTENT handle{};
-		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, handle));
+		    TRY_MAIN(tpm2_parse_handle(zfs_get_name(dataset), handle_s, handle));
 
 
 		    uint8_t wrap_key[WRAPPING_KEY_LEN];
@@ -32,20 +35,7 @@ int main(int argc, char ** argv) {
 		    }));
 
 
-		    int key_fd;
-		    TRY_MAIN(filled_fd(key_fd, (void *)wrap_key, sizeof(wrap_key)));
-		    quickscope_wrapper key_fd_deleter{[=] { close(key_fd); }};
-
-
-		    TRY_MAIN(with_stdin_at(key_fd, [&] {
-			    if(zfs_crypto_load_key(dataset, noop, nullptr))
-				    return __LINE__;  // Error printed by libzfs
-			    else
-				    printf("Key for %s %s\n", zfs_get_name(dataset), noop ? "OK" : "loaded");
-
-			    return 0;
-		    }));
-
+		    TRY_MAIN(load_key(dataset, wrap_key, noop));
 		    return 0;
 	    });
 }

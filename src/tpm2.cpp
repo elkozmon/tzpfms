@@ -3,6 +3,7 @@
 
 #include "tpm2.hpp"
 #include "main.hpp"
+#include "parse.hpp"
 
 #include <algorithm>
 #include <time.h>
@@ -24,6 +25,16 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 }
 
 
+int tpm2_parse_handle(const char * dataset_name, const char * handle_s, TPMI_DH_PERSISTENT & handle) {
+	if(parse_int(handle_s, handle)) {
+		fprintf(stderr, "Dataset %s's handle %s not valid.\n", dataset_name, handle_s);
+		return __LINE__;
+	}
+
+	return 0;
+}
+
+
 int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length) {
 	TPM2B_DIGEST * rand{};
 	TRY_TPM2("get random data from TPM", Esys_GetRandom(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, length, &rand));
@@ -42,7 +53,7 @@ int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length) {
 static int tpm2_find_unused_persistent_non_platform(ESYS_CONTEXT * tpm2_ctx, TPMI_DH_PERSISTENT & persistent_handle) {
 	TPMS_CAPABILITY_DATA * cap;  // TODO: check for more data?
 	TRY_TPM2("Read used persistent TPM handles", Esys_GetCapability(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, TPM2_CAP_HANDLES, TPM2_PERSISTENT_FIRST,
-	                                                    TPM2_MAX_CAP_HANDLES, nullptr, &cap));
+	                                                                TPM2_MAX_CAP_HANDLES, nullptr, &cap));
 	quickscope_wrapper cap_deleter{[=] { Esys_Free(cap); }};
 
 	persistent_handle = 0;
@@ -94,8 +105,9 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		TPM2B_CREATION_DATA * creation_data{};
 		TPM2B_DIGEST * creation_hash{};
 		TPMT_TK_CREATION * creation_ticket{};
-		TRY_TPM2("create primary encryption key", Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata,
-		                                                    &pcrs, &primary_handle, &public_ret, &creation_data, &creation_hash, &creation_ticket));
+		TRY_TPM2("create primary encryption key",
+		         Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata, &pcrs, &primary_handle,
+		                            &public_ret, &creation_data, &creation_hash, &creation_ticket));
 		quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
 		quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
 		quickscope_wrapper creation_data_deleter{[=] { Esys_Free(creation_data); }};
@@ -141,7 +153,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		TPM2B_DIGEST * creation_hash{};
 		TPMT_TK_CREATION * creation_ticket{};
 		TRY_TPM2("create key seal", Esys_Create(tpm2_ctx, primary_handle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &secret_sens, &pub, &metadata, &pcrs,
-		                                      &sealant_private, &sealant_public, &creation_data, &creation_hash, &creation_ticket));
+		                                        &sealant_private, &sealant_public, &creation_data, &creation_hash, &creation_ticket));
 		quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
 		quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
 		quickscope_wrapper creation_data_deleter{[=] { Esys_Free(creation_data); }};

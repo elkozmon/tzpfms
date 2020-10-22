@@ -40,40 +40,7 @@ int main(int argc, char ** argv) {
 		    REQUIRE_KEY_LOADED(dataset);
 
 
-		    // TSS_RESULT Tspi_Context_Create(TSS_HCONTEXT* phContext);
-		    // TSS_RESULT Tspi_Context_Connect(TSS_HCONTEXT hLocalContext, UNICODE* wszDestination);
-		    // TSS_RESULT Tspi_Context_GetTpmObject(TSS_HCONTEXT hContext, TSS_HTPM* phTPM);
-		    //
-		    // TSS_RESULT Tspi_TPM_GetRandom(TSS_HTPM hTPM, UINT32 size, BYTE** random);
-		    //
-		    //
-		    // TSS_RESULT Tspi_Context_LoadKeyByUUID(TSS_HCONTEXT hContext, TSS_FLAG persistentStorageType,
-		    //                                       TSS_UUID     uuidData, TSS_HKEY* phKey);
-		    //
-		    //
-		    // TSS_RESULT Tspi_Context_CreateObject(TSS_HCONTEXT hContext,  TSS_FLAG     objectType,
-		    //                                      TSS_FLAG     initFlags, TSS_HOBJECT* phObject);
-		    // TSS_RESULT Tspi_Key_CreateKey(TSS_HKEY hKey, TSS_HKEY hWrappingKey, TSS_HPCRS hPcrComposite);
-		    //
-		    //
-		    // TSS_RESULT Tspi_Data_Seal(TSS_HENCDATA hEncData,     TSS_HKEY hEncKey,
-		    //                           UINT32       ulDataLength, BYTE*    rgbDataToSeal,
-		    //                           TSS_HPCRS    hPcrComposite);
-		    //
-		    //
-		    // TSS_RESULT Tspi_Policy_SetSecret(TSS_HPOLICY hPolicy,        TSS_FLAG secretMode,
-		    //                                  UINT32      ulSecretLength, BYTE*    rgbSecret);
-		    //
-		    // TSS_RESULT Tspi_Policy_AssignToObject(TSS_HPOLICY hPolicy, TSS_HOBJECT hObject);
-		    //
-		    // TSS_RESULT Tspi_Context_FreeMemory(TSS_HCONTEXT hContext, BYTE* rgbMemory);
-		    // TSS_RESULT Tspi_Context_Close(TSS_HCONTEXT hLocalContext);
-		    //
-		    //
-		    // TSS_RESULT Tspi_GetAttribData(TSS_HOBJECT hObject, TSS_FLAG attribFlag,
-		    //                               TSS_FLAG    subFlag, UINT32*  pulAttribDataSize,
-		    //                               BYTE**      prgbAttribData);
-
+		    /// Mostly based on See tpm_sealdata(1) from tpm-tools.
 
 		    // All memory lives as long as this does
 		    TSS_HCONTEXT ctx{};
@@ -230,29 +197,13 @@ int main(int argc, char ** argv) {
 			    *cur++ = ':';
 			    for(auto i = 0u; i < sealed_object_blob_len; ++i, cur += 2)
 				    sprintf(cur, "%02X", sealed_object_blob[i]);
-				  *cur++ = '\0';
+			    *cur++ = '\0';
 		    }
 		    fprintf(stderr, "%s\n", handle);
 		    TRY_MAIN(set_key_props(dataset, THIS_BACKEND, handle));
 
-		    /// zfs_crypto_rewrap() with "prompt" reads from stdin, but not if it's a TTY;
-		    /// this user-proofs the set-up, and means we don't have to touch the filesysten:
-		    /// instead, get an FD, write the raw key data there, dup() it onto stdin,
-		    /// let libzfs read it, then restore stdin
 
-		    int key_fd;
-		    TRY_MAIN(filled_fd(key_fd, wrap_key, WRAPPING_KEY_LEN));
-		    quickscope_wrapper key_fd_deleter{[=] { close(key_fd); }};
-
-
-		    TRY_MAIN(with_stdin_at(key_fd, [&] {
-			    if(zfs_crypto_rewrap(dataset, TRY_PTR("get rewrap args", rewrap_args()), B_FALSE))
-				    return __LINE__;  // Error printed by libzfs
-			    else
-				    printf("Key for %s changed\n", zfs_get_name(dataset));
-
-			    return 0;
-		    }));
+		    TRY_MAIN(change_key(dataset, wrap_key));
 
 		    // ok = true;
 		    // return 0;

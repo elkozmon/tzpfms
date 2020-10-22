@@ -19,8 +19,12 @@ int main(int argc, char ** argv) {
 	    [&](auto dataset) {
 		    REQUIRE_KEY_LOADED(dataset);
 
+		    char * persistent_handle_s{};
+		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, persistent_handle_s));
+
 		    TPMI_DH_PERSISTENT persistent_handle{};
-		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, persistent_handle));
+		    TRY_MAIN(tpm2_parse_handle(zfs_get_name(dataset), persistent_handle_s, persistent_handle));
+
 
 		    if(zfs_crypto_rewrap(dataset, TRY_PTR("get clear rewrap args", clear_rewrap_args()), B_FALSE))
 			    return __LINE__;  // Error printed by libzfs

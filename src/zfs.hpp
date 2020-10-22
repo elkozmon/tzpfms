@@ -42,4 +42,15 @@ extern int set_key_props(zfs_handle_t * on, const char * backend, const char * h
 extern int clear_key_props(zfs_handle_t * from);
 
 /// Read in decoding props from the dataset
-extern int parse_key_props(zfs_handle_t * in, const char * our_backend, uint32_t & handle);
+extern int parse_key_props(zfs_handle_t * in, const char * our_backend, char *& handle);
+
+
+/// Rewrap key on on to wrap_key.
+///
+/// wrap_key must be WRAPPING_KEY_LEN long.
+extern int change_key(zfs_handle_t * on, const uint8_t * wrap_key);
+
+/// (Try to) load key wrap_key for for_d.
+///
+/// wrap_key must be WRAPPING_KEY_LEN long.
+extern int load_key(zfs_handle_t * for_d, const uint8_t * wrap_key, bool noop);
