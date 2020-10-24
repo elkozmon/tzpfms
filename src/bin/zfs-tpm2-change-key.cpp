@@ -36,31 +36,18 @@ int main(int argc, char ** argv) {
 		    //
 		    // tpm2_unseal -Q --object-context=0x81000000
 
-		    TRY_MAIN(with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
-			    char *previous_backend{}, *previous_handle_s{};
-			    TRY_MAIN(lookup_userprop(dataset, PROPNAME_BACKEND, previous_backend));
-			    TRY_MAIN(lookup_userprop(dataset, PROPNAME_KEY, previous_handle_s));
-			    if(!!previous_backend ^ !!previous_handle_s)
-				    fprintf(stderr, "Inconsistent tzpfms metadata for %s: back-end is %s, but handle is %s?\n", zfs_get_name(dataset), previous_backend,
-				            previous_handle_s);
-			    else if(previous_backend && previous_handle_s) {
-				    if(strcmp(previous_backend, THIS_BACKEND))
-					    fprintf(stderr,
-					            "Dataset %s was encrypted with tzpfms back-end %s before, but we are %s. You will have to free handle %s for back-end %s manually!\n",
-					            zfs_get_name(dataset), previous_backend, THIS_BACKEND, previous_handle_s, previous_backend);
+		    return with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
+			    TRY_MAIN(verify_backend(dataset, THIS_BACKEND, [&](auto previous_handle_s) {
+				    TPMI_DH_PERSISTENT previous_handle{};
+				    if(parse_int(previous_handle_s, previous_handle))
+					    fprintf(stderr, "Couldn't parse previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c %s\" or equivalent!\n",
+					            zfs_get_name(dataset), previous_handle_s);
 				    else {
-					    TPMI_DH_PERSISTENT previous_handle{};
-					    if(parse_int(previous_handle_s, previous_handle))
-						    fprintf(stderr, "Couldn't parse previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c %s\" or equivalent!\n",
-						            zfs_get_name(dataset), previous_handle_s);
-					    else {
-						    if(tpm2_free_persistent(tpm2_ctx, tpm2_session, previous_handle))
-							    fprintf(stderr,
-							            "Couldn't free previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n",
-							            zfs_get_name(dataset), previous_handle);
-					    }
+					    if(tpm2_free_persistent(tpm2_ctx, tpm2_session, previous_handle))
+						    fprintf(stderr, "Couldn't free previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n",
+						            zfs_get_name(dataset), previous_handle);
 				    }
-			    }
+			    }));
 
 			    uint8_t wrap_key[WRAPPING_KEY_LEN];
 			    TPMI_DH_PERSISTENT persistent_handle{};
@@ -74,7 +61,7 @@ int main(int argc, char ** argv) {
 			    quickscope_wrapper persistent_clearer{[&] {
 				    if(!ok && tpm2_free_persistent(tpm2_ctx, tpm2_session, persistent_handle))
 					    fprintf(stderr, "Couldn't free persistent handle. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n", persistent_handle);
-				    if(!ok && clear_key_props(dataset))  // Sync with zfs-tpm2-clear-key
+				    if(!ok && clear_key_props(dataset))  // Sync with zfs-tpm1x-change-key, zfs-tpm2-clear-key
 					    fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(dataset), PROPNAME_KEY,
 					            zfs_get_name(dataset));
 			    }};
@@ -93,8 +80,6 @@ int main(int argc, char ** argv) {
 
 			    ok = true;
 			    return 0;
-		    }));
-
-		    return 0;
+		    });
 	    });
 }

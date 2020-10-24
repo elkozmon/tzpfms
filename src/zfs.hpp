@@ -7,6 +7,8 @@
 #include <libzfs.h>
 #include <sys/nvpair.h>
 
+#include "main.hpp"
+
 
 #define TRY_NVL(what, ...) TRY_GENERIC(what, , , _try_ret, _try_ret, strerror, __VA_ARGS__)
 
@@ -54,3 +56,23 @@ extern int change_key(zfs_handle_t * on, const uint8_t * wrap_key);
 ///
 /// wrap_key must be WRAPPING_KEY_LEN long.
 extern int load_key(zfs_handle_t * for_d, const uint8_t * wrap_key, bool noop);
+
+/// Check back-end integrity; if the previous backend matches this_backend, run func(); otherwise warn.
+template <class F>
+int verify_backend(zfs_handle_t * on, const char * this_backend, F && func) {
+	char *previous_backend{}, *previous_handle{};
+	TRY_MAIN(lookup_userprop(on, PROPNAME_BACKEND, previous_backend));
+	TRY_MAIN(lookup_userprop(on, PROPNAME_KEY, previous_handle));
+
+	if(!!previous_backend ^ !!previous_handle)
+		fprintf(stderr, "Inconsistent tzpfms metadata for %s: back-end is %s, but handle is %s?\n", zfs_get_name(on), previous_backend, previous_handle);
+	else if(previous_backend && previous_handle) {
+		if(strcmp(previous_backend, this_backend))
+			fprintf(stderr, "Dataset %s was encrypted with tzpfms back-end %s before, but we are %s. You will have to free handle %s for back-end %s manually!\n",
+			        zfs_get_name(on), previous_backend, this_backend, previous_handle, previous_backend);
+		else
+			func(previous_handle);
+	}
+
+	return 0;
+}

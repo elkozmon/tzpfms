@@ -35,7 +35,7 @@ int main(int argc, char ** argv) {
 			    return 0;
 		    }));
 
-		    if(clear_key_props(dataset)) {  // Sync with zfs-tpm2-change-key
+		    if(clear_key_props(dataset)) {  // Sync with zfs-tpm1x-change-key, zfs-tpm2-change-key
 			    fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(dataset), PROPNAME_KEY,
 			            zfs_get_name(dataset));
 			    return __LINE__;
