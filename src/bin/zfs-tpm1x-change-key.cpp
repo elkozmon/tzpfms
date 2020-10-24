@@ -116,9 +116,7 @@ int main(int argc, char ** argv) {
 
 
 			    if(auto err = change_key(dataset, wrap_key)) {
-				    if(clear_key_props(dataset))  // Sync with zfs-tpm2-{clear,change}-key
-					    fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(dataset), PROPNAME_KEY,
-					            zfs_get_name(dataset));
+				    clear_key_props(dataset);
 				    return err;
 			    }
 

@@ -6,11 +6,11 @@
 #include <stdio.h>
 
 #include "../main.hpp"
-#include "../tpm2.hpp"
+#include "../tpm1x.hpp"
 #include "../zfs.hpp"
 
 
-#define THIS_BACKEND "TPM2"
+#define THIS_BACKEND "TPM1.X"
 
 
 int main(int argc, char ** argv) {
@@ -19,21 +19,16 @@ int main(int argc, char ** argv) {
 	    [&](auto dataset) {
 		    REQUIRE_KEY_LOADED(dataset);
 
-		    char * persistent_handle_s{};
-		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, persistent_handle_s));
+		    char * handle_s{};
+		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, handle_s));
 
-		    TPMI_DH_PERSISTENT persistent_handle{};
-		    TRY_MAIN(tpm2_parse_handle(zfs_get_name(dataset), persistent_handle_s, persistent_handle));
+		    tpm1x_handle handle{};  // Not like we use this, but for symmetry with the other -clear-keys
+		    TRY_MAIN(tpm1x_parse_handle(zfs_get_name(dataset), handle_s, handle));
 
 
 		    if(zfs_crypto_rewrap(dataset, TRY_PTR("get clear rewrap args", clear_rewrap_args()), B_FALSE))
 			    return __LINE__;  // Error printed by libzfs
 
-
-		    TRY_MAIN(with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
-			    TRY_MAIN(tpm2_free_persistent(tpm2_ctx, tpm2_session, persistent_handle));
-			    return 0;
-		    }));
 
 		    TRY_MAIN(clear_key_props(dataset));
 

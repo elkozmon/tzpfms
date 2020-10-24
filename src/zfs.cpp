@@ -81,7 +81,7 @@ int lookup_userprop(zfs_handle_t * in, const char * name, char *& out) {
 
 
 int set_key_props(zfs_handle_t * on, const char * backend, const char * handle) {
-		nvlist_t * props{};
+	nvlist_t * props{};
 	quickscope_wrapper props_deleter{[&] { nvlist_free(props); }};
 
 	TRY_NVL("allocate key nvlist", nvlist_alloc(&props, NV_UNIQUE_NAME, 0));
@@ -95,14 +95,23 @@ int set_key_props(zfs_handle_t * on, const char * backend, const char * handle) 
 
 
 int clear_key_props(zfs_handle_t * from) {
+	bool ok = false;
+	quickscope_wrapper props_deleter{[&] {
+		if(!ok)
+			fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(from), PROPNAME_KEY,
+			        zfs_get_name(from));
+	}};
+
 	TRY("delete tzpfms.backend", zfs_prop_inherit(from, PROPNAME_BACKEND, B_FALSE));
 	TRY("delete tzpfms.key", zfs_prop_inherit(from, PROPNAME_KEY, B_FALSE));
+
+	ok = true;
 	return 0;
 }
 
 
 int parse_key_props(zfs_handle_t * in, const char * our_backend, char *& handle) {
-	char *backend{};
+	char * backend{};
 	TRY_MAIN(lookup_userprop(in, PROPNAME_BACKEND, backend));
 
 	if(!backend) {

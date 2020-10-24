@@ -61,9 +61,8 @@ int main(int argc, char ** argv) {
 			    quickscope_wrapper persistent_clearer{[&] {
 				    if(!ok && tpm2_free_persistent(tpm2_ctx, tpm2_session, persistent_handle))
 					    fprintf(stderr, "Couldn't free persistent handle. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n", persistent_handle);
-				    if(!ok && clear_key_props(dataset))  // Sync with zfs-tpm1x-change-key, zfs-tpm2-clear-key
-					    fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(dataset), PROPNAME_KEY,
-					            zfs_get_name(dataset));
+				    if(!ok)
+					    clear_key_props(dataset);
 			    }};
 
 			    {
