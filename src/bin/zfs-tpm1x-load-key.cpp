@@ -35,8 +35,9 @@ int main(int argc, char ** argv) {
 		    uint8_t wrap_key[WRAPPING_KEY_LEN]{};
 		    TRY_MAIN(with_tpm1x_session([&](auto ctx, auto srk, auto srk_policy) {
 			    TSS_HOBJECT parent_key{};
-			    TRY_MAIN(try_srk("load sealant key from blob (did you take ownership?)", srk_policy,
-			                     [&] { return Tspi_Context_LoadKeyByBlob(ctx, srk, handle.parent_key_blob_len, handle.parent_key_blob, &parent_key); }));
+			    TRY_MAIN(try_policy_or_passphrase("load sealant key from blob (did you take ownership?)", "SRK", srk_policy, [&] {
+				    return Tspi_Context_LoadKeyByBlob(ctx, srk, handle.parent_key_blob_len, handle.parent_key_blob, &parent_key);
+			    }));
 			    quickscope_wrapper parent_key_deleter{[&] { Tspi_Key_UnloadKey(parent_key); }};
 
 			    TSS_HPOLICY parent_key_policy{};
@@ -46,9 +47,8 @@ int main(int argc, char ** argv) {
 				    Tspi_Policy_FlushSecret(parent_key_policy);
 				    Tspi_Context_CloseObject(ctx, parent_key_policy);
 			    }};
-			    fprintf(stderr, "Tspi_Policy_SetSecret(\"adenozynotrójfosforan\") = %s\n",
-			            Trspi_Error_String(
-			                Tspi_Policy_SetSecret(parent_key_policy, TSS_SECRET_MODE_PLAIN, strlen("adenozynotrójfosforan"), (BYTE *)"adenozynotrójfosforan")));
+			    TRY_TPM1X("assign default sealant key secret",
+			              Tspi_Policy_SetSecret(parent_key_policy, TSS_SECRET_MODE_SHA1, sizeof(parent_key_secret), (BYTE *)parent_key_secret));
 
 
 			    TSS_HOBJECT sealed_object{};
@@ -61,7 +61,8 @@ int main(int argc, char ** argv) {
 
 			    uint8_t * loaded_wrap_key{};
 			    uint32_t loaded_wrap_key_len{};
-			    TRY_TPM1X("unseal wrapping key", Tspi_Data_Unseal(sealed_object, parent_key, &loaded_wrap_key_len, &loaded_wrap_key));
+			    TRY_MAIN(try_policy_or_passphrase("unseal wrapping key", "wrapping key", parent_key_policy,
+			                                      [&] { return Tspi_Data_Unseal(sealed_object, parent_key, &loaded_wrap_key_len, &loaded_wrap_key); }));
 			    if(loaded_wrap_key_len != sizeof(wrap_key)) {
 				    fprintf(stderr, "Wrong sealed data length (%u != %zu):", loaded_wrap_key_len, sizeof(wrap_key));
 				    for(auto i = 0u; i < loaded_wrap_key_len; ++i)

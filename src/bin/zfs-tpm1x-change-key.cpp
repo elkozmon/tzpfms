@@ -58,13 +58,23 @@ int main(int argc, char ** argv) {
 				    Tspi_Policy_FlushSecret(parent_key_policy);
 				    Tspi_Context_CloseObject(ctx, parent_key_policy);
 			    }};
-			    // TODO: this is where we'd prompt for a password if we supported it yet
-			    fprintf(stderr, "Tspi_Policy_SetSecret(\"adenozynotrójfosforan\") = %s\n",
-			            Trspi_Error_String(
-			                Tspi_Policy_SetSecret(parent_key_policy, TSS_SECRET_MODE_PLAIN, strlen("adenozynotrójfosforan"), (BYTE *)"adenozynotrójfosforan")));
 
+			    {
+				    uint8_t * parent_key_passphrase{};
+				    size_t parent_key_passphrase_len{};
+				    TRY_MAIN(read_new_passphrase("wrapping key (or empty for none)", parent_key_passphrase, parent_key_passphrase_len));
+				    quickscope_wrapper parent_key_passphrase_deleter{[&] { free(parent_key_passphrase); }};
 
-			    TRY_MAIN(try_srk("create sealant key (did you take ownership?)", srk_policy, [&] { return Tspi_Key_CreateKey(parent_key, srk, 0); }));
+				    if(parent_key_passphrase_len)
+					    TRY_TPM1X("assign passphrase to parent_key key",
+					              Tspi_Policy_SetSecret(parent_key_policy, TSS_SECRET_MODE_PLAIN, parent_key_passphrase_len, parent_key_passphrase));
+				    else
+					    TRY_TPM1X("assign default sealant key secret",
+					              Tspi_Policy_SetSecret(parent_key_policy, TSS_SECRET_MODE_SHA1, sizeof(parent_key_secret), (BYTE *)parent_key_secret));
+			    }
+
+			    TRY_MAIN(try_policy_or_passphrase("create sealant key (did you take ownership?)", "SRK", srk_policy,
+			                                      [&] { return Tspi_Key_CreateKey(parent_key, srk, 0); }));
 
 			    TRY_TPM1X("load sealant key", Tspi_Key_LoadKey(parent_key, srk));
 

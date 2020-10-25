@@ -5,6 +5,10 @@
 
 
 #include "common.hpp"
+#include "fd.hpp"
+#include "main.hpp"
+
+#include <stdlib.h>
 
 #include <tss/platform.h>
 #include <tss/tspi.h>
@@ -15,6 +19,12 @@
 
 
 #define TRY_TPM1X(what, ...) TRY_GENERIC(what, , != TPM_SUCCESS, _try_ret, __LINE__, Trspi_Error_String, __VA_ARGS__)
+
+
+/// Used as default secret if passphrase wasn't provided for wrapping key for the sealed object
+// I just got this out of /dev/random
+static const constexpr uint8_t parent_key_secret[TPM_SHA1_160_HASH_LEN]{0xCE, 0x4C, 0xF6, 0x77, 0x87, 0x5B, 0x5E, 0xB8, 0x99, 0x35,
+                                                                        0x91, 0xD5, 0xA9, 0xAF, 0x1E, 0xD2, 0x4A, 0x3A, 0x87, 0x36};
 
 
 template <class F>
@@ -44,15 +54,26 @@ int with_tpm1x_session(F && func) {
 	return func(ctx, srk, srk_policy);
 }
 
-/// Try to run func() with the current SRK policy (well-known by default); if it fails, prompt for password and reattempt.
+/// Try to run func() with the current policy; if it fails, prompt for passphrase and reattempt up to three total times.
 template <class F>
-int try_srk(const char * what, TSS_HPOLICY srk_policy, F && func) {
+int try_policy_or_passphrase(const char * what, const char * what_for, TSS_HPOLICY policy, F && func) {
+	auto get_passphrase = [&] {
+		BYTE * pass{};
+		size_t pass_len{};
+		TRY_MAIN(read_known_passphrase(what_for, pass, pass_len));
+		quickscope_wrapper pass_deleter{[&] { free(pass); }};
+
+		TRY_TPM1X("set passphrase secret on policy", Tspi_Policy_SetSecret(policy, TSS_SECRET_MODE_PLAIN, pass_len, pass));
+		return 0;
+	};
+
 	auto err = func();
 	// Equivalent to TSS_ERROR_LAYER(err) == TSS_LAYER_TPM && TSS_ERROR_CODE(err) == TPM_E_AUTHFAIL
-	if((err & TSS_LAYER_TSP) == TSS_LAYER_TPM && (err & TSS_MAX_ERROR) == TPM_E_AUTHFAIL) {
-		// TODO: read SRK password from stdin here
-		TRY_TPM1X("set password secret on SRK policy", Tspi_Policy_SetSecret(srk_policy, TSS_SECRET_MODE_PLAIN, strlen("dupanina"), (BYTE *)"dupanina"));
+	for(int i = 0; ((err & TSS_LAYER_TSP) == TSS_LAYER_TPM && (err & TSS_MAX_ERROR) == TPM_E_AUTHFAIL) && i < 3; ++i) {
+		if(i)
+			fprintf(stderr, "Couldn't %s: %s\n", what, Trspi_Error_String(err));
 
+		TRY_MAIN(get_passphrase());
 		err = func();
 	}
 
@@ -80,9 +101,5 @@ struct tpm1x_handle {
 /// The stored handle is in the form [%X:%X] where the first blob is the parent key and the second is the sealed data.
 extern int tpm1x_parse_handle(const char * dataset_name, char * handle_s, tpm1x_handle & handle);
 
-
+/// Create sealed object, assign a policy and a known secret to it.
 extern int tpm1x_prep_sealed_object(TSS_HCONTEXT ctx, TSS_HOBJECT & sealed_object, TSS_HPOLICY & sealed_object_policy);
-// extern int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT & persistent_handle, const TPM2B_DATA & metadata, void * data,
-//                      size_t data_len);
-// extern int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle, void * data, size_t data_len);
-// extern int tpm2_free_persistent(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle);
