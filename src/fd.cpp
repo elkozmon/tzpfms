@@ -12,6 +12,10 @@
 #include <unistd.h>
 
 
+/// Matches libzfs
+#define MIN_PASSPHRASE_LEN 8
+
+
 int filled_fd(int & fd, const void * with, size_t with_len) {
 	int pipes[2];
 	TRY("create buffer pipe", pipe(pipes));
@@ -142,7 +146,7 @@ int read_known_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, s
 	if(len_out <= max_len)
 		return 0;
 
-	fprintf(stderr, "Passphrase too long: (max %zu)\n", max_len);
+	fprintf(stderr, "Passphrase too long (max %zu)\n", max_len);
 	free(buf);
 	buf     = nullptr;
 	len_out = 0;
@@ -155,8 +159,12 @@ int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, siz
 	TRY_MAIN(get_key_material_raw(whom, false, true, first_passphrase, first_passphrase_len));
 	quickscope_wrapper first_passphrase_deleter{[&] { free(first_passphrase); }};
 
+	if(first_passphrase_len != 0 && first_passphrase_len < MIN_PASSPHRASE_LEN) {
+		fprintf(stderr, "Passphrase too short (min %u)\n", MIN_PASSPHRASE_LEN);
+		return __LINE__;
+	}
 	if(first_passphrase_len > max_len) {
-		fprintf(stderr, "Passphrase too long: (max %zu)\n", max_len);
+		fprintf(stderr, "Passphrase too long (max %zu)\n", max_len);
 		return __LINE__;
 	}
 
