@@ -2,7 +2,8 @@
 
 ### TPM selection
 
-The tzpfms suite always connects to a local tcsd(8) process (at `localhost:30003`).
+The tzpfms suite connects to a local tcsd(8) process (at `localhost:30003`) by default.
+Use the environment variable `TZPFMS_TPM1X` to specify a remote TCS hostname.
 
 The TrouSerS tcsd(8) daemon will try `/dev/tpm0`, then `/udev/tpm0`, then `/dev/tpm`;
 by occupying one of the earlier ones with, for example, shell redirection, a later one can be selected.

@@ -31,7 +31,14 @@ template <class F>
 int with_tpm1x_session(F && func) {
 	TSS_HCONTEXT ctx{};  // All memory lives as long as this does
 	TRY_TPM1X("create TPM context", Tspi_Context_Create(&ctx));
-	TRY_TPM1X("connect TPM context to TPM", Tspi_Context_Connect(ctx, nullptr));
+
+	{
+		UNICODE * tcs_address{};
+		quickscope_wrapper tcs_address_deleter{[&] { free(tcs_address); }};
+		if(auto addr = getenv("TZPFMS_TPM1X"))
+			tcs_address = reinterpret_cast<UNICODE *>(TRY_PTR("allocate remote TPM address", Trspi_Native_To_UNICODE(reinterpret_cast<BYTE *>(addr), nullptr)));
+		TRY_TPM1X("connect TPM context to TPM", Tspi_Context_Connect(ctx, tcs_address));
+	}
 	quickscope_wrapper ctx_deleter{[&] {
 		Trspi_Error_String(Tspi_Context_FreeMemory(ctx, nullptr));
 		Trspi_Error_String(Tspi_Context_Close(ctx));
