@@ -17,7 +17,8 @@ Otherwise, or in case of an error, data required for manual intervention will be
 
 Next, a new wrapping key is be generated on the TPM, optionally backed up (see [OPTIONS][]),
 and sealed to a persistent object on the TPM under the owner hierarchy;
-the user is also prompted for an optional passphrase to protect the object with.
+if there is a passphrase set on the owner hierarchy, the user is prompted for it;
+the user is always prompted for an optional passphrase to protect the sealed object with.
 
 The following properties are set on `dataset`:
 

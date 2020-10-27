@@ -10,6 +10,36 @@
 #include <time.h>
 
 
+template <class F>
+static int try_or_passphrase(const char * what, const char * what_for, ESYS_CONTEXT * tpm2_ctx, TPM2_RC valid_error, ESYS_TR passphrased_object, F && func) {
+	auto err = func();
+	for(int i = 0; err == TPM2_RC_9 + valid_error && i < 3; ++i) {
+		if(i)
+			fprintf(stderr, "Couldn't %s: %s\n", what, Tss2_RC_Decode(err));
+
+		uint8_t * pass{};
+		size_t pass_len{};
+		TRY_MAIN(read_known_passphrase(what_for, pass, pass_len, sizeof(TPM2B_AUTH::buffer)));
+		quickscope_wrapper pass_deleter{[&] { free(pass); }};
+
+		TPM2B_AUTH auth{};
+		auth.size = pass_len;
+		memcpy(auth.buffer, pass, auth.size);
+
+		TRY_TPM2("set passphrase", Esys_TR_SetAuth(tpm2_ctx, passphrased_object, &auth));
+		err = func();
+	}
+
+	// TRY_TPM2() unrolled because no constexpr/string-literal-template arguments until C++20, which is not supported by GCC 8, which we need for Buster
+	if(err != TPM2_RC_SUCCESS) {
+		fprintf(stderr, "Couldn't %s: %s\n", what, Tss2_RC_Decode(err));
+		return __LINE__;
+	}
+
+	return 0;
+}
+
+
 TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 	TPM2B_DATA metadata{};
 
@@ -85,7 +115,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 	quickscope_wrapper primary_handle_deleter{[&] { Esys_FlushContext(tpm2_ctx, primary_handle); }};
 
 	{
-		const TPM2B_SENSITIVE_CREATE primary_sens{0, {{}, {8, "dupanina"}}};
+		const TPM2B_SENSITIVE_CREATE primary_sens{};
 
 		// Adapted from tpm2-tss-3.0.1/test/integration/esys-create-primary-hmac.int.c
 		TPM2B_PUBLIC pub{};
@@ -106,9 +136,10 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		TPM2B_CREATION_DATA * creation_data{};
 		TPM2B_DIGEST * creation_hash{};
 		TPMT_TK_CREATION * creation_ticket{};
-		TRY_TPM2("create primary encryption key",
-		         Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata, &pcrs, &primary_handle,
-		                            &public_ret, &creation_data, &creation_hash, &creation_ticket));
+		TRY_MAIN(try_or_passphrase("create primary encryption key", "owner hierarchy", tpm2_ctx, TPM2_RC_BAD_AUTH, ESYS_TR_RH_OWNER, [&] {
+			return Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata, &pcrs, &primary_handle,
+			                          &public_ret, &creation_data, &creation_hash, &creation_ticket);
+		}));
 		quickscope_wrapper creation_ticket_deleter{[=] { Esys_Free(creation_ticket); }};
 		quickscope_wrapper creation_hash_deleter{[=] { Esys_Free(creation_hash); }};
 		quickscope_wrapper creation_data_deleter{[=] { Esys_Free(creation_data); }};
@@ -197,26 +228,8 @@ int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTEN
 
 	TPM2B_SENSITIVE_DATA * unsealed{};
 	quickscope_wrapper unsealed_deleter{[=] { Esys_Free(unsealed); }};
-	{
-		auto err = Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed);
-		for(int i = 0; err == TPM2_RC_9 + TPM2_RC_AUTH_FAIL && i < 3; ++i) {
-			if(i)
-				fprintf(stderr, "Couldn't unseal wrapping key: %s\n", Tss2_RC_Decode(err));
-
-			uint8_t * pass{};
-			size_t pass_len{};
-			TRY_MAIN(read_known_passphrase("wrapping key", pass, pass_len, sizeof(TPM2B_AUTH::buffer)));
-			quickscope_wrapper pass_deleter{[&] { free(pass); }};
-
-			TPM2B_AUTH auth{};
-			auth.size = pass_len;
-			memcpy(auth.buffer, pass, auth.size);
-
-			TRY_TPM2("set passphrase for persistent object", Esys_TR_SetAuth(tpm2_ctx, pandle, &auth));
-			err = Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed);
-		}
-		TRY_TPM2("unseal wrapping key", err);
-	}
+	TRY_MAIN(try_or_passphrase("unseal wrapping key", "wrapping key", tpm2_ctx, TPM2_RC_AUTH_FAIL, pandle,
+	                           [&] { return Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed); }));
 
 	if(unsealed->size != data_len) {
 		fprintf(stderr, "Unsealed data has wrong length %u, expected %zu!\n", unsealed->size, data_len);
@@ -232,7 +245,8 @@ int tpm2_free_persistent(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_
 	TRY_TPM2("convert persistent handle to object", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
 
 	ESYS_TR new_handle;
-	TRY_TPM2("unpersist object", Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0, &new_handle));
+	TRY_MAIN(try_or_passphrase("unpersist object", "owner hierarchy", tpm2_ctx, TPM2_RC_BAD_AUTH, ESYS_TR_RH_OWNER,
+	                           [&] { return Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0, &new_handle); }));
 
 	return 0;
 }
