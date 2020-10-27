@@ -16,7 +16,8 @@ If `dataset` was previously encrypted with tzpfms and the *TPM2* back-end was us
 Otherwise, or in case of an error, data required for manual intervention will be printed to the standard error stream.
 
 Next, a new wrapping key is be generated on the TPM, optionally backed up (see [OPTIONS][]),
-and sealed to a persistent object on the TPM under the owner hierarchy.
+and sealed to a persistent object on the TPM under the owner hierarchy;
+the user is also prompted for an optional passphrase to protect the object with.
 
 The following properties are set on `dataset`:
 
@@ -27,7 +28,7 @@ The following properties are set on `dataset`:
 (namely zfs-tpm2-change-key(8), zfs-tpm2-load-key(8), and zfs-tpm2-clear-key(8)).
 
 `tzpfms.key` is an integer representing the sealed object;
-if needed, it can be passed to **tpm2_unseal(1) -c ${tzpfms.key}** or equivalent for back-up (see [OPTIONS][]).
+if needed, it can be passed to **tpm2_unseal(1) -c ${tzpfms.key} [-p ${password}]** or equivalent for back-up (see [OPTIONS][]).
 If you have a sealed key you can access with that or equivalent tool and set both of these properties, it will funxion seamlessly.
 
 Finally, the equivalent of **zfs(8) change-key -o keylocation=prompt -o keyformat=raw dataset** is performed with the new key.

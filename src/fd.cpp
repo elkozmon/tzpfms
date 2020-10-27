@@ -137,15 +137,28 @@ static int get_key_material_raw(const char * whom, bool again, bool newkey, uint
 	return 0;
 }
 
-int read_known_passphrase(const char * whom, uint8_t *& buf, size_t & len_out) {
-	return get_key_material_raw(whom, false, false, buf, len_out);
+int read_known_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, size_t max_len) {
+	TRY_MAIN(get_key_material_raw(whom, false, false, buf, len_out));
+	if(len_out <= max_len)
+		return 0;
+
+	fprintf(stderr, "Passphrase too long: (max %zu)\n", max_len);
+	free(buf);
+	buf     = nullptr;
+	len_out = 0;
+	return __LINE__;
 }
 
-int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out) {
+int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, size_t max_len) {
 	uint8_t * first_passphrase{};
 	size_t first_passphrase_len{};
 	TRY_MAIN(get_key_material_raw(whom, false, true, first_passphrase, first_passphrase_len));
 	quickscope_wrapper first_passphrase_deleter{[&] { free(first_passphrase); }};
+
+	if(first_passphrase_len > max_len) {
+		fprintf(stderr, "Passphrase too long: (max %zu)\n", max_len);
+		return __LINE__;
+	}
 
 	uint8_t * second_passphrase{};
 	size_t second_passphrase_len{};

@@ -6,6 +6,7 @@
 
 #include "common.hpp"
 #include <unistd.h>
+#include <stdint.h>
 
 
 template <class F>
@@ -33,5 +34,8 @@ extern int read_exact(const char * path, void * data, size_t len);
 /// Write exactly len bytes from data into path, or error
 extern int write_exact(const char * path, const void * data, size_t len, mode_t mode);
 
-extern int read_known_passphrase(const char * whom, uint8_t *& buf, size_t & len_out);
-extern int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out);
+/// Prompt for passphrase for whom the user knows, up to max_len bytes
+extern int read_known_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, size_t max_len = SIZE_MAX);
+
+/// Prompt twive for passphrase for whom the user is setting
+extern int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, size_t max_len = SIZE_MAX);

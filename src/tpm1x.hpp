@@ -64,23 +64,18 @@ int with_tpm1x_session(F && func) {
 /// Try to run func() with the current policy; if it fails, prompt for passphrase and reattempt up to three total times.
 template <class F>
 int try_policy_or_passphrase(const char * what, const char * what_for, TSS_HPOLICY policy, F && func) {
-	auto get_passphrase = [&] {
-		BYTE * pass{};
-		size_t pass_len{};
-		TRY_MAIN(read_known_passphrase(what_for, pass, pass_len));
-		quickscope_wrapper pass_deleter{[&] { free(pass); }};
-
-		TRY_TPM1X("set passphrase secret on policy", Tspi_Policy_SetSecret(policy, TSS_SECRET_MODE_PLAIN, pass_len, pass));
-		return 0;
-	};
-
 	auto err = func();
 	// Equivalent to TSS_ERROR_LAYER(err) == TSS_LAYER_TPM && TSS_ERROR_CODE(err) == TPM_E_AUTHFAIL
 	for(int i = 0; ((err & TSS_LAYER_TSP) == TSS_LAYER_TPM && (err & TSS_MAX_ERROR) == TPM_E_AUTHFAIL) && i < 3; ++i) {
 		if(i)
 			fprintf(stderr, "Couldn't %s: %s\n", what, Trspi_Error_String(err));
 
-		TRY_MAIN(get_passphrase());
+		BYTE * pass{};
+		size_t pass_len{};
+		TRY_MAIN(read_known_passphrase(what_for, pass, pass_len));
+		quickscope_wrapper pass_deleter{[&] { free(pass); }};
+
+		TRY_TPM1X("set passphrase secret on policy", Tspi_Policy_SetSecret(policy, TSS_SECRET_MODE_PLAIN, pass_len, pass));
 		err = func();
 	}
 

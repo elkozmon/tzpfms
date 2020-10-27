@@ -21,10 +21,10 @@ int with_tpm2_session(F && func) {
 	// https://tpm2-tss.readthedocs.io/en/latest/group___e_s_y_s___c_o_n_t_e_x_t.html
 
 	ESYS_CONTEXT * tpm2_ctx{};
-	TRY_TPM2("Esys_Initialize()", Esys_Initialize(&tpm2_ctx, nullptr, nullptr));
+	TRY_TPM2("initialise TPM connection", Esys_Initialize(&tpm2_ctx, nullptr, nullptr));
 	quickscope_wrapper tpm2_ctx_deleter{[&] { Esys_Finalize(&tpm2_ctx); }};
 
-	TRY_TPM2("Esys_Startup()", Esys_Startup(tpm2_ctx, TPM2_SU_CLEAR));
+	TRY_TPM2("start TPM", Esys_Startup(tpm2_ctx, TPM2_SU_CLEAR));
 
 	ESYS_TR tpm2_session = ESYS_TR_NONE;
 	quickscope_wrapper tpm2_session_deleter{[&] { Esys_FlushContext(tpm2_ctx, tpm2_session); }};
@@ -35,8 +35,8 @@ int with_tpm2_session(F && func) {
 		session_key.algorithm   = TPM2_ALG_AES;
 		session_key.keyBits.aes = 128;
 		session_key.mode.aes    = TPM2_ALG_CFB;
-		TRY_TPM2("Esys_StartAuthSession()", Esys_StartAuthSession(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, nullptr,
-		                                                          TPM2_SE_HMAC, &session_key, TPM2_ALG_SHA512, &tpm2_session));
+		TRY_TPM2("authenticate with TPM", Esys_StartAuthSession(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, nullptr,
+		                                                        TPM2_SE_HMAC, &session_key, TPM2_ALG_SHA512, &tpm2_session));
 	}
 
 	return func(tpm2_ctx, tpm2_session);

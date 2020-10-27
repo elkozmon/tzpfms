@@ -2,6 +2,7 @@
 
 
 #include "tpm2.hpp"
+#include "fd.hpp"
 #include "main.hpp"
 #include "parse.hpp"
 
@@ -84,7 +85,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 	quickscope_wrapper primary_handle_deleter{[&] { Esys_FlushContext(tpm2_ctx, primary_handle); }};
 
 	{
-		const TPM2B_SENSITIVE_CREATE primary_sens{};
+		const TPM2B_SENSITIVE_CREATE primary_sens{0, {{}, {8, "dupanina"}}};
 
 		// Adapted from tpm2-tss-3.0.1/test/integration/esys-create-primary-hmac.int.c
 		TPM2B_PUBLIC pub{};
@@ -140,6 +141,16 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		secret_sens.sensitive.data.size = data_len;
 		memcpy(secret_sens.sensitive.data.buffer, data, secret_sens.sensitive.data.size);
 
+		{
+			uint8_t * passphrase{};
+			size_t passphrase_len{};
+			TRY_MAIN(read_new_passphrase("wrapping key (or empty for none)", passphrase, passphrase_len, sizeof(TPM2B_SENSITIVE_CREATE::sensitive.userAuth.buffer)));
+			quickscope_wrapper passphrase_deleter{[&] { free(passphrase); }};
+
+			secret_sens.sensitive.userAuth.size = passphrase_len;
+			memcpy(secret_sens.sensitive.userAuth.buffer, passphrase, secret_sens.sensitive.userAuth.size);
+		}
+
 		// Same args as tpm2-tools' tpm2_create(1)
 		TPM2B_PUBLIC pub{};
 		pub.publicArea.type                                     = TPM2_ALG_KEYEDHASH;
@@ -185,8 +196,27 @@ int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTEN
 	TRY_TPM2("convert persistent handle to object", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
 
 	TPM2B_SENSITIVE_DATA * unsealed{};
-	TRY_TPM2("unseal data", Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed));
 	quickscope_wrapper unsealed_deleter{[=] { Esys_Free(unsealed); }};
+	{
+		auto err = Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed);
+		for(int i = 0; err == TPM2_RC_9 + TPM2_RC_AUTH_FAIL && i < 3; ++i) {
+			if(i)
+				fprintf(stderr, "Couldn't unseal wrapping key: %s\n", Tss2_RC_Decode(err));
+
+			uint8_t * pass{};
+			size_t pass_len{};
+			TRY_MAIN(read_known_passphrase("wrapping key", pass, pass_len, sizeof(TPM2B_AUTH::buffer)));
+			quickscope_wrapper pass_deleter{[&] { free(pass); }};
+
+			TPM2B_AUTH auth{};
+			auth.size = pass_len;
+			memcpy(auth.buffer, pass, auth.size);
+
+			TRY_TPM2("set passphrase for persistent object", Esys_TR_SetAuth(tpm2_ctx, pandle, &auth));
+			err = Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed);
+		}
+		TRY_TPM2("unseal wrapping key", err);
+	}
 
 	if(unsealed->size != data_len) {
 		fprintf(stderr, "Unsealed data has wrong length %u, expected %zu!\n", unsealed->size, data_len);
