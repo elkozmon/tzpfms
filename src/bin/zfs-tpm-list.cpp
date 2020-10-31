@@ -13,6 +13,10 @@
 
 /// zfs(8) uses struct zprop_get_cbdata_t, which is powerful, but inscrutable; we have a fixed format, which makes this easier
 struct output_line {
+	static const char * const key_available_display[2];
+	static const char * const coherent_display[2];
+
+
 	char name[ZFS_MAX_DATASET_NAME_LEN + 1];
 	char backend[TZPFMS_BACKEND_MAX_LEN + 1];
 	bool key_available : 1;
@@ -21,7 +25,12 @@ struct output_line {
 	bool included(bool print_nontzpfms, const char * backend_restrixion) const {
 		return (print_nontzpfms || this->backend[0] != '\0') && (!backend_restrixion || !strcmp(backend_restrixion, this->backend));
 	}
+
+	const char * backend_display() const { return (this->backend[0] != '\0') ? this->backend : "-"; }
 };
+
+const char * const output_line::key_available_display[2]{"unavailable", key_available_display[0] + 2};
+const char * const output_line::coherent_display[2]{"no", "yes"};
 
 
 int main(int argc, char ** argv) {
@@ -98,8 +107,8 @@ int main(int argc, char ** argv) {
 			    for(auto cur = lines; cur != lines + lines_len; ++cur)
 				    if(cur->included(print_nontzpfms, backend_restrixion)) {
 					    max_name_len          = std::max(max_name_len, strlen(cur->name));
-					    max_backend_len       = std::max(max_backend_len, (cur->backend[0] != '\0') ? strlen(cur->backend) : strlen("-"));
-					    max_key_available_len = std::max(max_key_available_len, cur->key_available ? strlen("available") : strlen("unavailable"));
+					    max_backend_len       = std::max(max_backend_len, strlen(cur->backend_display()));
+					    max_key_available_len = std::max(max_key_available_len, strlen(output_line::key_available_display[cur->key_available]));
 				    }
 		    }
 
@@ -114,7 +123,7 @@ int main(int argc, char ** argv) {
 			    println("NAME", "BACK-END", "KEYSTATUS", "COHERENT");
 		    for(auto cur = lines; cur != lines + lines_len; ++cur)
 			    if(cur->included(print_nontzpfms, backend_restrixion))
-				    println(cur->name, (cur->backend[0] != '\0') ? cur->backend : "-", cur->key_available ? "available" : "unavailable", cur->coherent ? "yes" : "no");
+				    println(cur->name, cur->backend_display(), output_line::key_available_display[cur->key_available], output_line::coherent_display[cur->coherent]);
 
 		    return 0;
 	    });
