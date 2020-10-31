@@ -1,9 +1,13 @@
-zfs-tpm2-change-key(8)  zfs-tpm2-change-key.8.ronn
-zfs-tpm2-load-key(8)    zfs-tpm2-load-key.8.ronn
-zfs-tpm2-clear-key(8)   zfs-tpm2-clear-key.8.ronn
+zfs-tpm2-change-key(8)   zfs-tpm2-change-key.8.ronn
+zfs-tpm2-load-key(8)     zfs-tpm2-load-key.8.ronn
+zfs-tpm2-clear-key(8)    zfs-tpm2-clear-key.8.ronn
+zfs-tpm1x-change-key(8)  zfs-tpm1x-change-key.8.ronn
+zfs-tpm1x-load-key(8)    zfs-tpm1x-load-key.8.ronn
+zfs-tpm1x-clear-key(8)   zfs-tpm1x-clear-key.8.ronn
+zfs-tpm-list(8)          zfs-tpm-list.8.ronn
 
-zfs(8)                  https://manpages.debian.org/bullseye/zfsutils-linux/zfs.8.en.html
-tcsd(8)                 https://manpages.debian.org/bullseye/trousers/tcsd.8.en.html
-tpm2_unseal(1)          https://manpages.debian.org/bullseye/tpm2-tools/tpm2_unseal.1.en.html
+zfs(8)                   https://manpages.debian.org/bullseye/zfsutils-linux/zfs.8.en.html
+tcsd(8)                  https://manpages.debian.org/bullseye/trousers/tcsd.8.en.html
+tpm2_unseal(1)           https://manpages.debian.org/bullseye/tpm2-tools/tpm2_unseal.1.en.html
 
-ESYS_CONTEXT(3)         https://www.mankier.com/3/ESYS_CONTEXT
+ESYS_CONTEXT(3)          https://www.mankier.com/3/ESYS_CONTEXT

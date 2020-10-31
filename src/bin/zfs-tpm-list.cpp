@@ -23,7 +23,7 @@ struct output_line {
 	bool coherent : 1;
 
 	bool included(bool print_nontzpfms, const char * backend_restrixion) const {
-		return (print_nontzpfms || this->backend[0] != '\0') && (!backend_restrixion || !strcmp(backend_restrixion, this->backend));
+		return (print_nontzpfms || !this->coherent || this->backend[0] != '\0') && (!backend_restrixion || !strcmp(backend_restrixion, this->backend));
 	}
 
 	const char * backend_display() const { return (this->backend[0] != '\0') ? this->backend : "-"; }
@@ -39,7 +39,7 @@ int main(int argc, char ** argv) {
 	size_t maxdepth                 = MAXDEPTH_UNSET;
 	const char * backend_restrixion = nullptr;
 	return do_bare_main(
-	    argc, argv, "Hrd:ab:", "[-H] [-r|-d max] [-a|-b back-end]",
+	    argc, argv, "Hrd:ab:", "[-H] [-r|-d max] [-a|-b back-end]", "[filesystem|volume]…",
 	    [&](auto arg) {
 		    switch(arg) {
 			    case 'H':

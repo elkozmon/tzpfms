@@ -20,7 +20,7 @@
 
 
 template <class G, class M>
-int do_bare_main(int argc, char ** argv, const char * getoptions, const char * usage, G && getoptfn, M && main) {
+int do_bare_main(int argc, char ** argv, const char * getoptions, const char * usage, const char * dataset_usage, G && getoptfn, M && main) {
 	const auto libz = TRY_PTR("initialise libzfs", libzfs_init());
 	quickscope_wrapper libz_deleter{[=] { libzfs_fini(libz); }};
 
@@ -35,7 +35,7 @@ int do_bare_main(int argc, char ** argv, const char * getoptions, const char * u
 		switch(opt) {
 			case '?':
 			case 'h':
-				fprintf(opt == 'h' ? stdout : stderr, "Usage: %s [-hV] %s%s<dataset>\n", argv[0], usage, strlen(usage) ? " " : "");
+				fprintf(opt == 'h' ? stdout : stderr, "Usage: %s [-hV] %s%s%s\n", argv[0], usage, strlen(usage) ? " " : "", dataset_usage);
 				return opt == 'h' ? 0 : __LINE__;
 			case 'V':
 				printf("tzpfms version %s\n", TZPFMS_VERSION);
@@ -45,7 +45,7 @@ int do_bare_main(int argc, char ** argv, const char * getoptions, const char * u
 					getoptfn(opt);
 				else {
 					if(auto err = getoptfn(opt)) {
-						fprintf(stderr, "Usage: %s [-hV] %s%s<dataset>\n", argv[0], usage, strlen(usage) ? " " : "");
+						fprintf(stderr, "Usage: %s [-hV] %s%s%s\n", argv[0], usage, strlen(usage) ? " " : "", dataset_usage);
 						return err;
 					}
 				}
@@ -56,7 +56,7 @@ int do_bare_main(int argc, char ** argv, const char * getoptions, const char * u
 
 template <class G, class M>
 int do_main(int argc, char ** argv, const char * getoptions, const char * usage, G && getoptfn, M && main) {
-	return do_bare_main(argc, argv, getoptions, usage, getoptfn, [&](auto libz) {
+	return do_bare_main(argc, argv, getoptions, usage, "<dataset>", getoptfn, [&](auto libz) {
 		if(optind >= argc) {
 			fprintf(stderr,
 			        "No dataset to act on?\n"
