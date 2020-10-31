@@ -17,8 +17,8 @@ Otherwise, or in case of an error, data required for manual intervention will be
 
 Next, a new wrapping key is be generated on the TPM, optionally backed up (see [OPTIONS][]),
 and sealed on the TPM;
-if the SRK passphrase, set when taking ownership, is not "well-known" (all zeroes), the user is prompted for it;
-the user is always prompted for an optional passphrase to protect the key with.
+the user is prompted for an optional passphrase to protect the key with,
+and for the SRK passphrase, set when taking ownership, if it is not "well-known" (all zeroes).
 
 The following properties are set on `dataset`:
 

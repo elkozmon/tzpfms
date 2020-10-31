@@ -6,7 +6,6 @@
 #include "../zfs.hpp"
 
 #include <algorithm>
-#include <sys/mman.h>
 
 
 #define TZPFMS_BACKEND_MAX_LEN 16
@@ -18,15 +17,20 @@ struct output_line {
 	char backend[TZPFMS_BACKEND_MAX_LEN + 1];
 	bool key_available : 1;
 	bool coherent : 1;
+
+	bool included(bool print_nontzpfms, const char * backend_restrixion) const {
+		return (print_nontzpfms || this->backend[0] != '\0') && (!backend_restrixion || !strcmp(backend_restrixion, this->backend));
+	}
 };
 
 
 int main(int argc, char ** argv) {
-	bool human           = true;
-	bool print_nontzpfms = false;
-	size_t maxdepth      = MAXDEPTH_UNSET;
+	bool human                      = true;
+	bool print_nontzpfms            = false;
+	size_t maxdepth                 = MAXDEPTH_UNSET;
+	const char * backend_restrixion = nullptr;
 	return do_bare_main(
-	    argc, argv, "Hrd:a", "[-H] [-r|-d max] [-a]",
+	    argc, argv, "Hrd:ab:", "[-H] [-r|-d max] [-a|-b back-end]",
 	    [&](auto arg) {
 		    switch(arg) {
 			    case 'H':
@@ -43,6 +47,9 @@ int main(int argc, char ** argv) {
 				    break;
 			    case 'a':
 				    print_nontzpfms = true;
+				    break;
+			    case 'b':
+				    backend_restrixion = optarg;
 				    break;
 		    }
 		    return 0;
@@ -71,7 +78,7 @@ int main(int argc, char ** argv) {
 			    strncpy(cur_line.backend, (backend && strlen(backend) <= TZPFMS_BACKEND_MAX_LEN) ? backend : "\0", TZPFMS_BACKEND_MAX_LEN);
 			    // Tristate available/unavailable/none, but it's gonna be either available or unavailable on envryption roots, so
 			    cur_line.key_available = zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_AVAILABLE;
-			    cur_line.coherent = !!backend == !!handle;
+			    cur_line.coherent      = !!backend == !!handle;
 
 			    return 0;
 		    }));
@@ -89,7 +96,7 @@ int main(int argc, char ** argv) {
 			    separator             = "  ";
 
 			    for(auto cur = lines; cur != lines + lines_len; ++cur)
-				    if(print_nontzpfms || cur->backend[0] != '\0') {
+				    if(cur->included(print_nontzpfms, backend_restrixion)) {
 					    max_name_len          = std::max(max_name_len, strlen(cur->name));
 					    max_backend_len       = std::max(max_backend_len, (cur->backend[0] != '\0') ? strlen(cur->backend) : strlen("-"));
 					    max_key_available_len = std::max(max_key_available_len, cur->key_available ? strlen("available") : strlen("unavailable"));
@@ -106,7 +113,7 @@ int main(int argc, char ** argv) {
 		    if(human)
 			    println("NAME", "BACK-END", "KEYSTATUS", "COHERENT");
 		    for(auto cur = lines; cur != lines + lines_len; ++cur)
-			    if(print_nontzpfms || cur->backend[0] != '\0')
+			    if(cur->included(print_nontzpfms, backend_restrixion))
 				    println(cur->name, (cur->backend[0] != '\0') ? cur->backend : "-", cur->key_available ? "available" : "unavailable", cur->coherent ? "yes" : "no");
 
 		    return 0;
