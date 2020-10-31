@@ -16,6 +16,8 @@
 #define PROPNAME_BACKEND "xyz.nabijaczleweli:tzpfms.backend"
 #define PROPNAME_KEY "xyz.nabijaczleweli:tzpfms.key"
 
+#define MAXDEPTH_UNSET (SIZE_MAX - 1)
+
 
 /// Mimic libzfs error output
 #define REQUIRE_KEY_LOADED(dataset)                                                  \
@@ -75,4 +77,50 @@ int verify_backend(zfs_handle_t * on, const char * this_backend, F && func) {
 	}
 
 	return 0;
+}
+
+
+template <class F>
+struct for_all_datasets_iterator_data {
+	F & func;
+	zfs_iter_f iterator;
+	size_t depth;
+};
+
+/// Iterate over datasets like zfs(8) list
+template <class F>
+int for_all_datasets(libzfs_handle_t * libz, char ** datasets, size_t maxdepth, F && func) {
+	auto iterator = [](zfs_handle_t * dataset, void * dat_p) {
+		auto dat = reinterpret_cast<for_all_datasets_iterator_data<F> *>(dat_p);
+		TRY_MAIN(dat->func(dataset));
+
+		if(dat->depth) {
+			for_all_datasets_iterator_data<F> ndat{dat->func, dat->iterator, dat->depth - 1};
+			return zfs_iter_filesystems(dataset, dat->iterator, &ndat);
+		} else
+			return 0;
+	};
+
+	if(!*datasets) {
+		for_all_datasets_iterator_data<F> dat{func, iterator, (maxdepth == MAXDEPTH_UNSET) ? SIZE_MAX : maxdepth};
+		switch(auto err = zfs_iter_root(libz, dat.iterator, &dat)) {
+			case -1:  // zfs_iter_filesystems() only bubbles errors from callback, but zfs_iter_root() might produce new ones and return -1
+				TRY("iterate root datasets", err);
+				__builtin_unreachable();
+			case 0:
+				return 0;
+			default:
+				return err;
+		}
+	} else {
+		for_all_datasets_iterator_data<F> dat{func, iterator, (maxdepth == MAXDEPTH_UNSET) ? 0 : maxdepth};
+		for(; *datasets; ++datasets) {
+			auto dataset = zfs_open(libz, *datasets, ZFS_TYPE_FILESYSTEM | ZFS_TYPE_VOLUME);
+			if(!dataset)
+				continue;  // error printed by libzfs; mirror zfs(8) list behaviour here and continue despite any errors
+
+			TRY_MAIN(dat.iterator(dataset, &dat));
+		}
+		return 0;
+	}
 }
