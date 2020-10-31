@@ -83,11 +83,11 @@ int main(int argc, char ** argv) {
 			    return 0;
 		    }));
 
-		    auto max_name_len          = 0u;
-		    auto max_backend_len       = 0u;
-		    auto max_key_available_len = 0u;
-		    auto max_coherent_len      = 0u;
-		    auto separator             = "\t";
+		    size_t max_name_len          = 0;
+		    size_t max_backend_len       = 0;
+		    size_t max_key_available_len = 0;
+		    size_t max_coherent_len      = 0;
+		    auto separator               = "\t";
 		    if(human) {
 			    max_name_len          = strlen("NAME");
 			    max_backend_len       = strlen("BACK-END");
@@ -104,11 +104,11 @@ int main(int argc, char ** argv) {
 		    }
 
 		    auto println = [&](auto name, auto backend, auto key_available, auto coherent) {
-			    printf("%-*s%s%-*s%s%-*s%s%-*s\n",                       //
-			           max_name_len, name, separator,                    //
-			           max_backend_len, backend, separator,              //
-			           max_key_available_len, key_available, separator,  //
-			           max_coherent_len, coherent);
+			    printf("%-*s%s%-*s%s%-*s%s%-*s\n",                                         //
+			           static_cast<int>(max_name_len), name, separator,                    //
+			           static_cast<int>(max_backend_len), backend, separator,              //
+			           static_cast<int>(max_key_available_len), key_available, separator,  //
+			           static_cast<int>(max_coherent_len), coherent);
 		    };
 		    if(human)
 			    println("NAME", "BACK-END", "KEYSTATUS", "COHERENT");
