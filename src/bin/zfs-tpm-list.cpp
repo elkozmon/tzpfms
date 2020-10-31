@@ -11,6 +11,12 @@
 #define TZPFMS_BACKEND_MAX_LEN 16
 
 
+enum class key_loadedness : char {
+	none     = -1,
+	unloaded = 0,
+	loaded   = 1,
+};
+
 /// zfs(8) uses struct zprop_get_cbdata_t, which is powerful, but inscrutable; we have a fixed format, which makes this easier
 struct output_line {
 	static const char * const key_available_display[2];
@@ -22,8 +28,9 @@ struct output_line {
 	bool key_available : 1;
 	bool coherent : 1;
 
-	bool included(bool print_nontzpfms, const char * backend_restrixion) const {
-		return (print_nontzpfms || !this->coherent || this->backend[0] != '\0') && (!backend_restrixion || !strcmp(backend_restrixion, this->backend));
+	bool included(bool print_nontzpfms, const char * backend_restrixion, key_loadedness key_loadedness_restrixion) const {
+		return (print_nontzpfms || !this->coherent || this->backend[0] != '\0') && (!backend_restrixion || !strcmp(backend_restrixion, this->backend)) &&
+		       (key_loadedness_restrixion == key_loadedness::none || key_loadedness_restrixion == static_cast<key_loadedness>(this->key_available));
 	}
 
 	const char * backend_display() const { return (this->backend[0] != '\0') ? this->backend : "-"; }
@@ -38,8 +45,9 @@ int main(int argc, char ** argv) {
 	bool print_nontzpfms            = false;
 	size_t maxdepth                 = MAXDEPTH_UNSET;
 	const char * backend_restrixion = nullptr;
+	auto key_loadedness_restrixion  = key_loadedness::none;
 	return do_bare_main(
-	    argc, argv, "Hrd:ab:", "[-H] [-r|-d max] [-a|-b back-end]", "[filesystem|volume]…",
+	    argc, argv, "Hrd:ab:ul", "[-H] [-r|-d max] [-a|-b back-end] [-u|-l]", "[filesystem|volume]…",
 	    [&](auto arg) {
 		    switch(arg) {
 			    case 'H':
@@ -59,6 +67,12 @@ int main(int argc, char ** argv) {
 				    break;
 			    case 'b':
 				    backend_restrixion = optarg;
+				    break;
+			    case 'u':
+				    key_loadedness_restrixion = key_loadedness::unloaded;
+				    break;
+			    case 'l':
+				    key_loadedness_restrixion = key_loadedness::loaded;
 				    break;
 		    }
 		    return 0;
@@ -105,7 +119,7 @@ int main(int argc, char ** argv) {
 			    separator             = "  ";
 
 			    for(auto cur = lines; cur != lines + lines_len; ++cur)
-				    if(cur->included(print_nontzpfms, backend_restrixion)) {
+				    if(cur->included(print_nontzpfms, backend_restrixion, key_loadedness_restrixion)) {
 					    max_name_len          = std::max(max_name_len, strlen(cur->name));
 					    max_backend_len       = std::max(max_backend_len, strlen(cur->backend_display()));
 					    max_key_available_len = std::max(max_key_available_len, strlen(output_line::key_available_display[cur->key_available]));
@@ -122,7 +136,7 @@ int main(int argc, char ** argv) {
 		    if(human)
 			    println("NAME", "BACK-END", "KEYSTATUS", "COHERENT");
 		    for(auto cur = lines; cur != lines + lines_len; ++cur)
-			    if(cur->included(print_nontzpfms, backend_restrixion))
+			    if(cur->included(print_nontzpfms, backend_restrixion, key_loadedness_restrixion))
 				    println(cur->name, cur->backend_display(), output_line::key_available_display[cur->key_available], output_line::coherent_display[cur->coherent]);
 
 		    return 0;

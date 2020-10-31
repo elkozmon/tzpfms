@@ -3,7 +3,7 @@ zfs-tpm-list(8) -- print dataset tzpfms metadata
 
 ## SYNOPSIS
 
-`zfs-tpm-list` [-H] [-r\|-d *depth*] [-a\|-b *back-end*] [*filesystem*\|*volume*]…
+`zfs-tpm-list` [-H] [-r\|-d *depth*] [-a\|-b *back-end*] [-u\|-l] [*filesystem*\|*volume*]…
 
 ## DESCRIPTION
 
@@ -15,7 +15,7 @@ zfs-tpm-list(8) lists the following properties on encryption roots:
   * `keystatus`: "available" or "unavailable",
   * `coherent`: "yes" if either both `xyz.nabijaczleweli:tzpfms.backend` and `xyz.nabijaczleweli:tzpfms.key` are present or missing, "no" otherwise.
 
-Incoherent datasets require immediate operator attention, with either the appropriate zfs-tpm\*-clear-key program or zfs(8) change-key —
+Incoherent datasets require immediate operator attention, with either the appropriate zfs-tpm\*-clear-key program or zfs(8) change-key and zfs(8) inherit —
 if the key becomes unloaded, they will require restoration from back-up.
 However, they should never occur, unless something went terribly wrong with the dataset properties.
 
@@ -38,6 +38,11 @@ The `-a` and `-b` [OPTIONS]() can be used to either list all roots or only ones 
   * `-b` *back-end*:
     List only encryption roots with tzpfms back-end *back-end*.
 
+  * `-l`:
+    List only encryption roots whose keys are available.
+  * `-u`:
+    List only encryption roots whose keys are unavailable.
+
 ## EXAMPLES
 
     $ zfs-tpm-list
@@ -59,6 +64,14 @@ The `-a` and `-b` [OPTIONS]() can be used to either list all roots or only ones 
     owo/vtnc  -         available    yes
     owo/v nc  -         available    yes
     owo/enc   TPM1.X    available    yes
+
+    $ zfs-tpm-list -al
+    NAME      BACK-END  KEYSTATUS  COHERENT
+    awa       -         available  yes
+    owo/vtnc  -         available  yes
+    owo/v nc  -         available  yes
+    owo/enc   TPM1.X    available  yes
+
 
 #include "common.h"
 
