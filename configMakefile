@@ -54,6 +54,7 @@ LNCMAKEAR := LDFLAGS="$(LNCXXAR)"
 
 AWK ?= awk
 RONN ?= ronn
+SHELLCHECK ?= shellcheck
 OBJ := .o
 CXXAR := -O3 -std=c++17 -fno-exceptions -Wall -Wextra $(CXXSPECIFIC) -pipe $(INCCXXAR) $(PIC)
 STRIP ?= strip
@@ -65,3 +66,4 @@ OBJDIR := $(BLDDIR)obj/
 SRCDIR := src/
 TSTDIR := test/
 MANDIR := man/
+INITRDDIR := initrd/

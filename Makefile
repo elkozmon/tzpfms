@@ -30,35 +30,40 @@ INCAR := $(foreach l,$(foreach l,,$(l)/include),-isystemext/$(l)) $(foreach l,,-
 VERAR := $(foreach l,TZPFMS,-D$(l)_VERSION='$($(l)_VERSION)')
 BINARY_SOURCES := $(sort $(wildcard $(SRCDIR)bin/*.cpp $(SRCDIR)bin/**/*.cpp))
 COMMON_SOURCES := $(filter-out $(BINARY_SOURCES),$(sort $(wildcard $(SRCDIR)*.cpp $(SRCDIR)**/*.cpp $(SRCDIR)**/**/*.cpp $(SRCDIR)**/**/**/*.cpp)))
-# TEST_SOURCES := $(sort $(wildcard $(TSTDIR)*.cpp $(TSTDIR)**/*.cpp $(TSTDIR)**/**/*.cpp $(TSTDIR)**/**/**/*.cpp))
+SHELLCHECK_SOURCES := $(sort $(shell grep -lR '#!/bin/.*sh' $(INITRDDIR)))
 MANPAGE_SOURCES := $(sort $(wildcard $(MANDIR)*.md.pp))
 
 
-.PHONY : all clean build build-test man
+.PHONY : all clean build shellcheck i-t man
 .SECONDARY:
 
 
-all : build man # build-test test
-
-#test: build-test
-#	$(OUTDIR)tzpfms-test$(EXE)
+all : build man shellcheck i-t
 
 clean :
 	rm -rf $(OUTDIR)
 
 build : $(subst $(SRCDIR)bin/,$(OUTDIR),$(subst .cpp,$(EXE),$(BINARY_SOURCES)))
-#build-test : $(OUTDIR)tzpfms-test$(EXE)
 man : $(OUTDIR)man/index.txt
+shellcheck : $(BLDDIR)shellcheck-stamp
+i-t : $(OUTDIR)initramfs-tools
 
-
-#$(OUTDIR)tzpfms-test$(EXE) : $(subst $(TSTDIR),$(BLDDIR)test/,$(subst .cpp,$(OBJ),$(TEST_SOURCES))) $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(filter-out $(SRCDIR)main.cpp,$(SOURCES)))) $(patsubst ext/fmt/src/%.cc,$(BLDDIR)fmt/obj/%$(OBJ),$(wildcard ext/fmt/src/*.cc))
-#	$(CXX) $(CXXAR) -o$@ $^ $(PIC) $(LDAR)
 
 $(OUTDIR)man/index.txt : $(MANDIR)index.txt $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%,$(MANPAGE_SOURCES))
 	@mkdir -p $(dir $@)
 	cp $< $(dir $@)
 	$(RONN) --organization="tzpfms developers"    $(filter-out $<,$^)
 	$(RONN) --organization="tzpfms developers" -f $(filter-out $<,$^)
+
+$(BLDDIR)shellcheck-stamp : $(SHELLCHECK_SOURCES)
+	@mkdir -p $(dir $@)
+	$(SHELLCHECK) --exclude SC1091 $^
+	@date > $@
+
+$(OUTDIR)initramfs-tools : $(sort $(wildcard $(INITRDDIR)initramfs-tools))
+	@mkdir -p $@/usr/share/initramfs-tools/hooks $@/usr/share/tzpfms
+	ln $(INITRDDIR)initramfs-tools/hook $@/usr/share/initramfs-tools/hooks/tzpfms
+	ln $(INITRDDIR)initramfs-tools/zfs-patch.sh $@/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
 
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))

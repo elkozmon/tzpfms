@@ -1,0 +1,20 @@
+#!/bin/sh
+# SPDX-License-Identifier: MIT
+
+PREREQ="zfs"
+[ "$1" = "prereqs" ] && exec echo "$PREREQ"
+. /usr/share/initramfs-tools/hook-functions
+
+
+# Bit of a hack: replace zfs-intramfs' decrypt_fs() in /scripts/zfs with our version that understands tzpfms datasets
+sed -Ei 's/decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
+cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh  >> "$DESTDIR/scripts/zfs"
+
+
+for x in zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key; do
+	xloc="$(command -v "$x")"
+	[ "$xloc" = "" ] || copy_exec "$xloc"
+done
+
+
+add_loaded_modules '*tpm*'  # TODO: is this the best way of going about this?
