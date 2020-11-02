@@ -13,10 +13,11 @@ decrypt_fs() {
 
 	# First three lines borrowed from /scripts/zfs#decrypt_fs()
 	# If pool encryption is active and the zfs command understands '-o encryption'
-	if [ "$(zpool list -H -o feature@encryption "$(echo "${fs}" | awk -F/ '{print $1}')")" = 'active' ]; then
-		ENCRYPTIONROOT="$(get_fs_value "${fs}" encryptionroot)"
+	if [ "$(zpool list -H -o feature@encryption "$(echo "$fs" | awk -F/ '{print $1}')")" = "active" ]; then
+		ENCRYPTIONROOT="$(get_fs_value "$fs" encryptionroot)"
 
 		if ! [ "$ENCRYPTIONROOT" = "-" ]; then
+			# Match this sexion to dracut/tzpfms-load-key.sh
 			if command -v zfs-tpm2-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM2 "$ENCRYPTIONROOT")" = "" ]; then
 				with_promptable_tty zfs-tpm2-load-key "$ENCRYPTIONROOT"
 				return
@@ -42,7 +43,7 @@ decrypt_fs() {
 # Plymouth doesn't allow us to actually check what the splash status was, and ioctl(KDGETMODE) isn't reliable;
 # ideally, we'd only clear the screen if we were making the switch, but not if the user was already switched to the log output.
 # Instead, clear if there's a "quiet", leave alone otherwise, and always restore;
-# cmdline option "plymouth.ignore-show-splash" can be used to disable splashes alltogether, if desired.
+# cmdline option "plymouth.ignore-show-splash" can be used to disable splashes altogether, if desired.
 with_promptable_tty() {
 	if command -v plymouth > /dev/null && plymouth --ping; then
 		plymouth hide-splash
