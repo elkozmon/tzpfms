@@ -23,8 +23,10 @@ decrypt_fs() {
 			fi
 
 			if command -v zfs-tpm1x-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" = "" ]; then
-				with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"
-				return
+				[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && tcsd -f &
+				with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"; err="$?"
+				[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && kill %+
+				return "$err"
 			fi
 
 			__tzpfms__decrypt_fs "${fs}"
@@ -35,18 +37,28 @@ decrypt_fs() {
 	return 0
 }
 
-# Mimic /scripts/zfs#decrypt_fs(): setting "printk" temporarily to "7" will allow prompt even if kernel option "quiet"
-# TODO?: /scripts/zfs#decrypt_fs() checks for plymouth and systemd,
-# but we don't know how many passphrases we're gonna read (anywhere between 0 and 2 best-base or 0 and 6 worst-case);
-# can we "disable" plymouth somehow?
+# This sucks a lot of ass, since we don't know the questions or the amount thereof beforehand
+# (0-2 (owner hierarchy/ownership + sealed object, both optional) best-case and 0-6 worst-case (both entered wrong twice)).
+# Plymouth doesn't allow us to actually check what the splash status was, and ioctl(KDGETMODE) isn't reliable;
+# ideally, we'd only clear the screen if we were making the switch, but not if the user was already switched to the log output.
+# Instead, clear if there's a "quiet", leave alone otherwise, and always restore;
+# cmdline option "plymouth.ignore-show-splash" can be used to disable splashes alltogether, if desired.
 with_promptable_tty() {
-	printk="$(awk '{print $1}' /proc/sys/kernel/printk)"
-	echo 7 > /proc/sys/kernel/printk
+	if command -v plymouth > /dev/null && plymouth --ping; then
+		plymouth hide-splash
+		grep -q 'quiet' /proc/cmdline && printf '\033c'
 
-	"$@"
-	ret="$?"
+		"$@"; ret="$?"
 
-	echo "$printk" > /proc/sys/kernel/printk
+		plymouth show-splash
+	else
+		# Mimic /scripts/zfs#decrypt_fs(): setting "printk" temporarily to "7" will allow prompt even if kernel option "quiet"
+		printk="$(awk '{print $1}' /proc/sys/kernel/printk)"
+		[ "$printk" = "7" ] || echo 7 > /proc/sys/kernel/printk
 
+		"$@"; ret="$?"
+
+		[ "$printk" = "7" ] || echo 7 > /proc/sys/kernel/printk
+	fi
 	return "$ret"
 }

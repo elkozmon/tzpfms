@@ -6,12 +6,14 @@ PREREQ="zfs"
 . /usr/share/initramfs-tools/hook-functions
 
 
-# Bit of a hack: replace zfs-intramfs' decrypt_fs() in /scripts/zfs with our version that understands tzpfms datasets
-sed -Ei 's/decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
+# Bit of a hack: replace zfs-intramfs' decrypt_fs() in /scripts/zfs with our version that understands tzpfms datasets,
+#                should be compatible with, other hooks doing the same thing
+[ "${verbose:-n}" = "y" ] && echo "Patching /scripts/zfs"
+sed -Ei 's/^decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
 cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh  >> "$DESTDIR/scripts/zfs"
 
 
-for x in zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key; do
+for x in zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key tcsd; do
 	xloc="$(command -v "$x")"
 	[ "$xloc" = "" ] || copy_exec "$xloc"
 done
