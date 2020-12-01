@@ -44,6 +44,8 @@ decrypt_fs() {
 # ideally, we'd only clear the screen if we were making the switch, but not if the user was already switched to the log output.
 # Instead, clear if there's a "quiet", leave alone otherwise, and always restore;
 # cmdline option "plymouth.ignore-show-splash" can be used to disable splashes altogether, if desired.
+#
+# There's a similar but distinct version of this and the code above in dracut/tzpfms-load-key.sh
 with_promptable_tty() {
 	if command -v plymouth > /dev/null && plymouth --ping; then
 		plymouth hide-splash

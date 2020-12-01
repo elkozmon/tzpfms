@@ -36,18 +36,16 @@ fi
 # ideally, we'd only clear the screen if we were making the switch, but not if the user was already switched to the log output.
 # Instead, clear if there's a "quiet", leave alone otherwise, and always restore;
 # cmdline option "plymouth.ignore-show-splash" can be used to disable splashes altogether, if desired.
+#
+# There's a similar but distinct version of both of these in initramfs-tools/zfs-patch.sh
 with_promptable_tty() {
-    echo "$@" > /dev/console
     if command -v plymouth > /dev/null && plymouth --ping; then
-        #plymouth hide-splash
-        plymouth deactivate
-        grep -q 'quiet' /proc/cmdline && printf '\033c'
+        plymouth hide-splash
+        grep -q 'quiet' /proc/cmdline && printf '\033c' > /dev/console
 
         "$@" < /dev/console > /dev/console 2>&1; ret="$?"
 
-        # TODO: some combination of all this does an absolute fucky wucky
-        plymouth reactivate????
-        #plymouth show-splash
+        plymouth show-splash
     else
         # Mimic /scripts/zfs#decrypt_fs(): setting "printk" temporarily to "7" will allow prompt even if kernel option "quiet"
         printk="$(awk '{print $1}' /proc/sys/kernel/printk)"
@@ -80,7 +78,5 @@ if [ "$(zpool list -H -o feature@encryption "$(echo "$BOOTFS" | awk -F/ '{print 
         fi
 
         # Fall through to zfs-dracut's zfs-load-key.sh
-        with_promptable_tty zfs load-key "$ENCRYPTIONROOT"
-        exit
     fi
 fi

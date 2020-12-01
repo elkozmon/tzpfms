@@ -7,7 +7,7 @@ PREREQ="zfs"
 
 
 # Bit of a hack: replace zfs-intramfs' decrypt_fs() in /scripts/zfs with our version that understands tzpfms datasets,
-#                should be compatible with, other hooks doing the same thing
+#                which should be compatible with other hooks doing the same thing
 [ "${verbose:-n}" = "y" ] && echo "Patching /scripts/zfs"
 sed -Ei 's/^decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
 cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh  >> "$DESTDIR/scripts/zfs"
