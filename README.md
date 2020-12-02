@@ -74,6 +74,20 @@ swtpm_ioctl -s /dev/tpm  # to shut down, apparently
 
 If your platform has a TPM, occupy it first by running `exec 100<>/dev/tpm0` or equivalent. `tcsd` looks at `/dev/tpm0` before `/dev/tpm`.
 
+#### initrd
+
+Running
+```sh
+swtpm socket --ctrl type=unixio,path=/tmp/swtpm --tpm2 --tpmstate dir=tpm2-state --flags not-need-init --log level=10
+# or
+swtpm socket --ctrl type=unixio,path=/tmp/swtpm --tpmstate dir=tpm1x-state --log level=10
+```
+instead, alongside passing
+```
+-chardev socket,id=chrtpm,path=/tmp/swtpm -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0
+```
+to QEMU will create a TPM device on the guest which Should® be fully funxional.
+
 ## Reporting bugs
 
 There's [the tracker](//todo.sr.ht/~nabijaczleweli/tzpfms), but also see the list below.
