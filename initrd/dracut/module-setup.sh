@@ -2,15 +2,41 @@
 # SPDX-License-Identifier: MIT
 
 
-# -h
-# 0
-# "$hostonly" set?
+_get_backend() {
+	rootfs="$(awk '$2 == "/" && $3 == "zfs" {print $1; exit 1}' /etc/mtab)"
+	[ -z "$rootfs" ] && return 1
+
+	eroot="$(zfs get encryptionroot -Ho value "$rootfs")"
+	[ -z "$eroot" ] || [ "$eroot" = "-" ] && return 1
+
+
+	backend="$(zfs-tpm-list -H "$eroot" | awk -F'\t' '{print $2}')"
+	[ -z "$backend" ] && return 1
+}
+
+_install_tpm2() {
+  # shellcheck disable=SC2046
+	dracut_install zfs-tpm2-load-key $(find /usr/lib -name 'libtss2-tcti*.so*')  # TODO: there's got to be a better way™!
+}
+
+_install_tpm1x() {
+	dracut_install zfs-tpm1x-load-key
+	command -v tcsd > /dev/null && dracut_install tcsd
+}
+
+
 check() {
 	command -v zfs-tpm-list > /dev/null || return 1
 
-	# TODO: handle hostonly, proper only-include-if-all-found
-	#command -v zfs-tpm2-load-key > /dev/null
-	#command -v zfs-tpm1x-load-key > /dev/null
+  # shellcheck disable=SC2154
+	if [ -n "$hostonly" ]; then
+		_get_backend || return
+
+		[ "$backend" = "TPM2"   ] && command -v zfs-tpm2-load-key  > /dev/null && return 0
+		[ "$backend" = "TPM1.X" ] && command -v zfs-tpm1x-load-key > /dev/null && return 0
+
+		return 1
+	fi
 
 	return 0
 }
@@ -18,7 +44,6 @@ check() {
 
 depends() {
 	echo zfs
-	return 0
 }
 
 
@@ -29,38 +54,16 @@ installkernel() {
 
 install() {
 	dracut_install zfs-tpm-list
-	dracut_install zfs-tpm2-load-key
-	dracut_install zfs-tpm1x-load-key
-	dracut_install tcsd
+
+	if [ -n "${hostonly}" ]; then
+		_get_backend
+
+		[ "$backend" = "TPM2"   ] && _install_tpm2
+		[ "$backend" = "TPM1.X" ] && _install_tpm1x
+	else
+		command -v zfs-tpm2-load-key  > /dev/null && _install_tpm2
+		command -v zfs-tpm1x-load-key > /dev/null && _install_tpm1x
+	fi
 
 	inst_hook pre-mount 89 "${moddir:-}/tzpfms-load-key.sh"  # zfs installs with 90, we *must* run beforehand
-	return 0
-
-	inst_simple "${moddir:-}/zfs-lib.sh" "/lib/dracut-zfs-lib.sh"
-	if [ -e @sysconfdir@/zfs/zpool.cache ]; then
-		inst @sysconfdir@/zfs/zpool.cache
-		type mark_hostonly >/dev/null 2>&1 && mark_hostonly @sysconfdir@/zfs/zpool.cache
-	fi
-
-	if dracut_module_included "systemd"; then
-		mkdir -p "${initdir:-}/${systemdsystemunitdir:-}/zfs-import.target.wants"
-		for _item in scan cache ; do
-			dracut_install @systemdunitdir@/zfs-import-$_item.service
-			if ! [ -L "${initdir}/${systemdsystemunitdir:-}/zfs-import.target.wants"/zfs-import-$_item.service ]; then
-				ln -s ../zfs-import-$_item.service "${initdir}/${systemdsystemunitdir:-}/zfs-import.target.wants"/zfs-import-$_item.service
-				type mark_hostonly >/dev/null 2>&1 && mark_hostonly @systemdunitdir@/zfs-import-$_item.service
-			fi
-		done
-		inst "${moddir}"/zfs-env-bootfs.service "${systemdsystemunitdir:-}"/zfs-env-bootfs.service
-		ln -s ../zfs-env-bootfs.service "${initdir}/${systemdsystemunitdir:-}/zfs-import.target.wants"/zfs-env-bootfs.service
-		type mark_hostonly >/dev/null 2>&1 && mark_hostonly @systemdunitdir@/zfs-env-bootfs.service
-		dracut_install systemd-ask-password
-		dracut_install systemd-tty-ask-password-agent
-		mkdir -p "${initdir}/${systemdsystemunitdir:-}/initrd.target.wants"
-		dracut_install @systemdunitdir@/zfs-import.target
-		if ! [ -L "${initdir}/${systemdsystemunitdir:-}/initrd.target.wants"/zfs-import.target ]; then
-			ln -s ../zfs-import.target "${initdir}/${systemdsystemunitdir:-}/initrd.target.wants"/zfs-import.target
-			type mark_hostonly >/dev/null 2>&1 && mark_hostonly @systemdunitdir@/zfs-import.target
-		fi
-	fi
 }
