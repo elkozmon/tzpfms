@@ -1,6 +1,7 @@
 image: debian/sid
 secrets:
   - ccb6777e-650b-4fa2-87e1-e2342f5bb605  # tzpfms SSH key
+  - 513a97a6-300c-4749-93a7-7816b2c4f41d  # tzpfms auth token
 packages:
   - clang
   - llvm-dev
@@ -9,6 +10,7 @@ packages:
   - libtspi-dev
   - ronn
   - shellcheck
+  - curl
 tasks:
   - get-zfs: |
       sudo sed -i 's/main/main contrib non-free/' /etc/apt/sources.list
@@ -27,7 +29,7 @@ tasks:
       git -C tzpfms/ worktree add ../tzpfms-man man
       cd tzpfms-man
       git ls-tree -z --name-only HEAD | xargs -0 rm -r
-      mv ../tzpfms/out/man/* .
+      cp -pr ../tzpfms/out/man/* .
       git add .
       git config user.email "nabijaczleweli/autouploader@nabijaczleweli.xyz"
       git config user.name "наб autouploader"
@@ -35,3 +37,21 @@ tasks:
       git remote set-url origin 'git@git.sr.ht:~nabijaczleweli/tzpfms'
       ssh-keyscan git.sr.ht > ~/.ssh/known_hosts
       git push
+  - release: |
+      tag="$(git -C tzpfms describe --abbrev=0 --tags)"
+      [ "$(git -C tzpfms rev-list -n1 "$tag")" = "$(git -C tzpfms rev-list -n1 HEAD)" ] || exit 0
+      mkdir "tzpfms-$tag-bin-amd64"
+      mv tzpfms/out/zfs-tpm*        "tzpfms-$tag-bin-amd64"
+      mv tzpfms/out/dracut          "tzpfms-$tag-dracut"
+      mv tzpfms/out/initramfs-tools "tzpfms-$tag-initramfs-tools"
+      mv tzpfms/out/man             "tzpfms-$tag-man"
+      for s in bin-amd64 dracut initramfs-tools man; do
+        tar -caf "tzpfms-$tag-$s.tbz2" "tzpfms-$tag-$s"
+      done
+      set +x  # Avoid echoing the token
+      for f in *.tbz2; do
+        curl -H "Authorization: Bearer $(cat ~/.release-token)" \
+             -XPOST                                             \
+             -F "file=@$f"                                      \
+            "https://git.sr.ht/api/repos/tzpfms/artifacts/$tag"
+      done
