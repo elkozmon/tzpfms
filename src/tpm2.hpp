@@ -36,7 +36,7 @@ int with_tpm2_session(F && func) {
 		session_key.keyBits.aes = 128;
 		session_key.mode.aes    = TPM2_ALG_CFB;
 		TRY_TPM2("authenticate with TPM", Esys_StartAuthSession(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, nullptr,
-		                                                        TPM2_SE_HMAC, &session_key, TPM2_ALG_SHA512, &tpm2_session));
+		                                                        TPM2_SE_HMAC, &session_key, TPM2_ALG_SHA256, &tpm2_session));
 	}
 
 	return func(tpm2_ctx, tpm2_session);
