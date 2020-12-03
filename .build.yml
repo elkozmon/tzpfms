@@ -3,6 +3,7 @@ secrets:
   - ccb6777e-650b-4fa2-87e1-e2342f5bb605  # tzpfms SSH key
 packages:
   - clang
+  - llvm-dev
   - pkg-config
   - libtss2-dev
   - libtspi-dev
