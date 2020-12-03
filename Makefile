@@ -34,11 +34,11 @@ SHELLCHECK_SOURCES := $(sort $(shell grep -lR '#!/bin/.*sh' $(INITRDDIR)))
 MANPAGE_SOURCES := $(sort $(wildcard $(MANDIR)*.md.pp))
 
 
-.PHONY : all clean build shellcheck i-t man
+.PHONY : all clean build shellcheck i-t dracut man
 .SECONDARY:
 
 
-all : build man shellcheck i-t
+all : build man shellcheck i-t dracut
 
 clean :
 	rm -rf $(OUTDIR)
@@ -47,6 +47,7 @@ build : $(subst $(SRCDIR)bin/,$(OUTDIR),$(subst .cpp,$(EXE),$(BINARY_SOURCES)))
 man : $(OUTDIR)man/index.txt
 shellcheck : $(BLDDIR)shellcheck-stamp
 i-t : $(OUTDIR)initramfs-tools
+dracut : $(OUTDIR)dracut
 
 
 $(OUTDIR)man/index.txt : $(MANDIR)index.txt $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%,$(MANPAGE_SOURCES))
@@ -60,10 +61,14 @@ $(BLDDIR)shellcheck-stamp : $(SHELLCHECK_SOURCES)
 	$(SHELLCHECK) --exclude SC1091 $^
 	@date > $@
 
-$(OUTDIR)initramfs-tools : $(sort $(wildcard $(INITRDDIR)initramfs-tools))
+$(OUTDIR)initramfs-tools : $(INITRDDIR)initramfs-tools
 	@mkdir -p $@/usr/share/initramfs-tools/hooks $@/usr/share/tzpfms
-	ln $(INITRDDIR)initramfs-tools/hook $@/usr/share/initramfs-tools/hooks/tzpfms
-	ln $(INITRDDIR)initramfs-tools/zfs-patch.sh $@/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
+	ln $^/hook         $@/usr/share/initramfs-tools/hooks/tzpfms
+	ln $^/zfs-patch.sh $@/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
+
+$(OUTDIR)dracut : $(INITRDDIR)dracut
+	@mkdir -p $@/usr/lib/dracut/modules.d/91tzpfms
+	ln $(wildcard $^/*) $@/usr/lib/dracut/modules.d/91tzpfms
 
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))

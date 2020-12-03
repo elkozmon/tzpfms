@@ -12,6 +12,15 @@ T P M
 
 Plus it's a pretty good annoyed sigh onomatopoeia.
 
+### What?
+
+Essentially BitLocker, but for ZFS –
+a random raw key is generated and sealed to the TPM (both 2 and 1.x supported) with an additional optional password in front of it,
+tying the dataset to the platform and an additional optional secret (or to the posession of the back-up).
+
+Both dracut (with/without Plymouth) (with/without hostonly) and initramfs-tools (with/without Plymouth) are supported for
+[ZFS-on-root](https://nabijaczleweli.xyz/content/blogn_t/005-low-curse-zfs-on-root.html) set-ups.
+
 ### Building
 
 You'll need `pkg-config`, `ronn`, `shellcheck`, `libzfslinux-dev`, `libtss2-dev`, `libtspi-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
@@ -21,6 +30,9 @@ The output binaries are trimmed of extraneous dependencies, so they're all just 
 
 Copy the `out/zfs-tpm*` binaries corresponding to the back-ends you want to `/sbin`,
 continue as the [manual](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man/zfs-tpm2-change-key.md) [page](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man/zfs-tpm1x-change-key.md) instructs.
+
+For initrd support, copy the content of either `out/dracut/` or `out/initramfs-tools/` over `/`;
+these need `zfs-tpm-list` but will work with any combination of back-end `*-load-key` binaries.
 
 <!-- #### From Debian repository
 
