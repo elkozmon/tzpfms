@@ -46,8 +46,7 @@ else
 	LNCXXAR :=
 endif
 
-# TZPFMS_VERSION := "$(patsubst v%,%,$(shell git describe))"
-TZPFMS_VERSION := "0.0.0-$(shell git rev-list HEAD --count)"
+TZPFMS_VERSION := "$(patsubst v%,%,$(shell git describe))"
 
 INCCMAKEAR := CXXFLAGS="$(INCCXXAR)"
 LNCMAKEAR := LDFLAGS="$(LNCXXAR)"
