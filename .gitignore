@@ -9,6 +9,7 @@
 !*Makefile
 !*.sublime-project
 !*.md
+!*.awk
 !src
 !src/**
 !man

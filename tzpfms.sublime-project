@@ -39,7 +39,7 @@
 			"follow_symlinks": true,
 			"name": "Build scripts",
 			"path": ".",
-			"file_include_patterns": [".build.yml", "*Makefile"],
+			"file_include_patterns": [".build.yml", "*Makefile", "*.awk"],
 			"folder_exclude_patterns": ["*"]
 		},
 	]

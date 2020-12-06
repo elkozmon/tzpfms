@@ -30,8 +30,9 @@ INCAR := $(foreach l,$(foreach l,,$(l)/include),-isystemext/$(l)) $(foreach l,,-
 VERAR := $(foreach l,TZPFMS,-D$(l)_VERSION='$($(l)_VERSION)')
 BINARY_SOURCES := $(sort $(wildcard $(SRCDIR)bin/*.cpp $(SRCDIR)bin/**/*.cpp))
 COMMON_SOURCES := $(filter-out $(BINARY_SOURCES),$(sort $(wildcard $(SRCDIR)*.cpp $(SRCDIR)**/*.cpp $(SRCDIR)**/**/*.cpp $(SRCDIR)**/**/**/*.cpp)))
-SHELLCHECK_SOURCES := $(sort $(shell grep -lR '#!/bin/.*sh' $(INITRDDIR)))
+MANPAGE_HEADERS := $(sort $(wildcard $(MANDIR)*.h))
 MANPAGE_SOURCES := $(sort $(wildcard $(MANDIR)*.md.pp))
+INITRD_HEADERS := $(sort $(wildcard $(INITRDDIR)*.h))
 
 
 .PHONY : all clean build shellcheck i-t dracut man
@@ -40,14 +41,16 @@ MANPAGE_SOURCES := $(sort $(wildcard $(MANDIR)*.md.pp))
 
 all : build man shellcheck i-t dracut
 
+shellcheck : i-t dracut
+	find $(OUTDIR)initramfs-tools/ $(OUTDIR)dracut -name '*.sh' -exec echo $(SHELLCHECK) --exclude SC1091 {} + | sh -x
+
 clean :
 	rm -rf $(OUTDIR)
 
 build : $(subst $(SRCDIR)bin/,$(OUTDIR),$(subst .cpp,$(EXE),$(BINARY_SOURCES)))
 man : $(OUTDIR)man/index.txt
-shellcheck : $(BLDDIR)shellcheck-stamp
-i-t : $(OUTDIR)initramfs-tools
-dracut : $(OUTDIR)dracut
+i-t : $(OUTDIR)initramfs-tools/usr/share/initramfs-tools/hooks/tzpfms $(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
+dracut : $(patsubst $(INITRDDIR)dracut/%,$(OUTDIR)dracut/usr/lib/dracut/modules.d/91tzpfms/%,$(sort $(wildcard $(INITRDDIR)dracut/*.sh)))
 
 
 $(OUTDIR)man/index.txt : $(MANDIR)index.txt $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%,$(MANPAGE_SOURCES))
@@ -56,19 +59,13 @@ $(OUTDIR)man/index.txt : $(MANDIR)index.txt $(patsubst $(MANDIR)%.pp,$(OUTDIR)ma
 	$(RONN) --organization="tzpfms developers"    $(filter-out $<,$^)
 	$(RONN) --organization="tzpfms developers" -f $(filter-out $<,$^)
 
-$(BLDDIR)shellcheck-stamp : $(SHELLCHECK_SOURCES)
+$(OUTDIR)initramfs-tools/usr/share/initramfs-tools/hooks/tzpfms: $(INITRDDIR)initramfs-tools/hook $(INITRD_HEADERS)
 	@mkdir -p $(dir $@)
-	$(SHELLCHECK) --exclude SC1091 $^
-	@date > $@
+	$(AWK) -f pp.awk $< > $@
 
-$(OUTDIR)initramfs-tools : $(INITRDDIR)initramfs-tools
-	@mkdir -p $@/usr/share/initramfs-tools/hooks $@/usr/share/tzpfms
-	ln $^/hook         $@/usr/share/initramfs-tools/hooks/tzpfms
-	ln $^/zfs-patch.sh $@/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
-
-$(OUTDIR)dracut : $(INITRDDIR)dracut
-	@mkdir -p $@/usr/lib/dracut/modules.d/91tzpfms
-	ln $(wildcard $^/*) $@/usr/lib/dracut/modules.d/91tzpfms
+$(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh: $(INITRDDIR)initramfs-tools/zfs-patch.sh $(INITRD_HEADERS)
+	@mkdir -p $(dir $@)
+	$(AWK) -f pp.awk $< > $@
 
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))
@@ -84,6 +81,10 @@ $(BLDDIR)test/%$(OBJ) : $(TSTDIR)%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXAR) $(INCAR) -I$(SRCDIR) $(VERAR) -c -o$@ $^
 
-$(OUTDIR)man/%.md : $(MANDIR)%.md.pp $(sort $(wildcard $(MANDIR)*.h))
+$(OUTDIR)man/%.md : $(MANDIR)%.md.pp $(MANPAGE_HEADERS)
 	@mkdir -p $(dir $@)
-	$(AWK) '/^#include/ {gsub("\"", "", $$2); while((getline inc < ("$(dir $<)" $$2)) == 1) print inc; next}  {print}' $< > $@
+	$(AWK) -f pp.awk $< > $@
+
+$(OUTDIR)dracut/usr/lib/dracut/modules.d/91tzpfms/% : $(INITRDDIR)dracut/% $(INITRD_HEADERS)
+	@mkdir -p $(dir $@)
+	$(AWK) -f pp.awk $< > $@
