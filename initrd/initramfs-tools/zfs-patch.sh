@@ -24,9 +24,36 @@ decrypt_fs() {
 			fi
 
 			if command -v zfs-tpm1x-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" = "" ]; then
-				[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && tcsd -f &
+				[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && {
+					ip l | awk -F '[[:space:]]*:[[:space:]]*' '{if($2 == "lo") exit $3 ~ /UP/}'
+					lo_was_up="$?"
+					if [ "$lo_was_up" = "0" ]; then
+						ip l set up dev lo
+						while ! ip a show dev lo | grep -qE '::1|127.0.0.1'; do sleep 0.1; done
+					fi
+
+					if [ "${quiet:-n}" = "y" ]; then
+						tcsd -f > /tcsd.log 2>&1 &
+					else
+						tcsd -f &
+					fi
+					tcsd_port="$(awk -F '[[:space:]]*=[[:space:]]*' '!/^[[:space:]]*#/ && !/^$/ && $1 ~ /port$/ {gsub(/[[:space:]]/, "", $2); print $2}' /etc/tcsd.conf)"
+					i=0; while [ "$i" -lt 100 ] && ! netstat -lt | grep -q "${tcsd_port:-30003}"; do sleep 0.1; i="$((i + 1))"; done
+					[ "$i" = 100 ] && echo "Couldn't start tcsd!" >&2
+				}
+
 				with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"; err="$?"
-				[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && kill %+
+
+				[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && {
+					kill %+
+
+					if [ "$lo_was_up" = "0" ]; then
+						ip l set down dev lo
+						# ::1 removed automatically
+						ip a del 127.0.0.1/8 dev lo 2>/dev/null
+					fi
+				}
+
 				return "$err"
 			fi
 
@@ -49,7 +76,7 @@ decrypt_fs() {
 with_promptable_tty() {
 	if command -v plymouth > /dev/null && plymouth --ping; then
 		plymouth hide-splash
-		grep -q 'quiet' /proc/cmdline && printf '\033c'
+		[ "${quiet:-n}" = "y" ] && printf '\033c'
 
 		"$@"; ret="$?"
 
@@ -61,7 +88,7 @@ with_promptable_tty() {
 
 		"$@"; ret="$?"
 
-		[ "$printk" = "7" ] || echo 7 > /proc/sys/kernel/printk
+		[ "$printk" = "7" ] || echo "$printk" > /proc/sys/kernel/printk
 	fi
 	return "$ret"
 }

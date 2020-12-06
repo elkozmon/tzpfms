@@ -88,11 +88,12 @@ int main(int argc, char ** argv) {
 				    Tspi_Context_CloseObject(ctx, sealed_object);
 			    }};
 
-			    TSS_HOBJECT bound_pcrs{};  // See tpm_sealdata.c from src:tpm-tools for more on flags here
-			    TRY_TPM1X("create PCR list", Tspi_Context_CreateObject(ctx, TSS_OBJECT_TYPE_PCRS, 0, &bound_pcrs));
-			    quickscope_wrapper bound_pcrs_deleter{[&] { Tspi_Context_CloseObject(ctx, bound_pcrs); }};
+			    // This would need to replace the 0 below to handle PCRs
+			    // TSS_HOBJECT bound_pcrs{};  // See tpm_sealdata.c from src:tpm-tools for more on flags here
+			    // TRY_TPM1X("create PCR list", Tspi_Context_CreateObject(ctx, TSS_OBJECT_TYPE_PCRS, 0, &bound_pcrs));
+			    // quickscope_wrapper bound_pcrs_deleter{[&] { Tspi_Context_CloseObject(ctx, bound_pcrs); }};
 
-			    TRY_TPM1X("seal wrapping key data", Tspi_Data_Seal(sealed_object, parent_key, WRAPPING_KEY_LEN, wrap_key, bound_pcrs));
+			    TRY_TPM1X("seal wrapping key data", Tspi_Data_Seal(sealed_object, parent_key, WRAPPING_KEY_LEN, wrap_key, 0));
 
 
 			    uint8_t * parent_key_blob{};

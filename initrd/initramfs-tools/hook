@@ -13,10 +13,44 @@ sed -Ei 's/^decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
 cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh  >> "$DESTDIR/scripts/zfs"
 
 
-for x in zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key tcsd $(find /usr/lib -name 'libtss2-tcti*.so*'); do  # TODO: there's got to be a better way™!
+for x in tpm_resetdalock zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key tcsd $(find /usr/lib -name 'libtss2-tcti*.so*'); do  # TODO: there's got to be a better way™!
 	xloc="$(command -v "$x")"
 	[ "$xloc" = "" ] || copy_exec "$xloc"
 done
 
+if command -v tcsd > /dev/null; then
+	# tcsd exits if it doesn't have tss group and user
+	grep tss /etc/group  >> "$DESTDIR/etc/group"
+	grep tss /etc/passwd >> "$DESTDIR/etc/passwd"
 
-add_loaded_modules '*tpm*'  # TODO: is this the best way of going about this?
+	for f in /lib/udev/rules.d/*tpm*; do
+		copy_file rule $f
+	done
+
+	if [ -e /etc/tcsd.conf ]; then
+		copy_file config /etc/tcsd.conf
+		system_ps_file="$(awk -F '[[:space:]]*=[[:space:]]*' '!/^[[:space:]]*#/ && !/^$/ && $1 ~ /system_ps_file$/ {gsub(/[[:space:]]*$/, "", $2); print $2}' /etc/tcsd.conf)"
+		system_ps_file="${system_ps_file:-/var/lib/tpm/system.data}"
+	fi
+
+	# tcsd can't find SRK if state not present, refuses to start if it doesn't have parent to tss dir
+	mkdir -p "$DESTDIR/$(dirname "$(dirname "$system_ps_file")")"
+	[ -f "$system_ps_file" ] && copy_file state "$system_ps_file"
+fi
+
+# localhost needs to resolve at the very least
+for f in /etc/hosts /etc/resolv.conf /etc/host.conf /etc/gai.conf; do
+	[ -e $f ] && copy_file config $f
+done
+if [ -e /etc/nsswitch.conf ]; then
+	copy_file config /etc/nsswitch.conf
+	databases="$(awk '/^group|hosts/ {for(i = 2; i <= NF; ++i) print $i}' /etc/nsswitch.conf | sort | uniq)"
+	for db in $databases; do
+		for f in /lib/*/"libnss_$db"*; do
+			copy_exec "$f"
+		done
+	done
+fi
+
+
+copy_modules_dir 'kernel/drivers/char/tpm'
