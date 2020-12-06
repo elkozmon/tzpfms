@@ -38,7 +38,7 @@ tasks:
       ssh-keyscan git.sr.ht > ~/.ssh/known_hosts
       git push
   - release: |
-      tag="$(git -C tzpfms describe --abbrev=0 --tags)"
+      tag="$(git -C tzpfms describe --abbrev=0 --tags || echo HEAD~1)"
       [ "$(git -C tzpfms rev-list -n1 "$tag")" = "$(git -C tzpfms rev-list -n1 HEAD)" ] || exit 0
       mkdir "tzpfms-$tag-bin-amd64"
       mv tzpfms/out/zfs-tpm*        "tzpfms-$tag-bin-amd64"
