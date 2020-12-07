@@ -41,7 +41,7 @@ function input() {
 				last = $i ~ /\)$/
 
 				sub(/[,\)]/, "", $i)
-				macro_args[macroname,i - 2] = $i
+				macro_args[macroname,i - 1] = $i
 			}
 		}
 

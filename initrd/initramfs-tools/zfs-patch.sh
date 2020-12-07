@@ -28,7 +28,7 @@ decrypt_fs() {
 			fi
 
 			if command -v zfs-tpm1x-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" = "" ]; then
-				POTENTIALLY_START_TCSD{}
+				POTENTIALLY_START_TCSD{netstat -lt, }
 				with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"; err="$?"
 				POTENTIALLY_KILL_TCSD{}
 				return "$err"

@@ -17,6 +17,11 @@ root="${root:=$(getarg root=)}"
 rootfstype="${rootfstype:=$(getarg rootfstype=)}"
 [ "${root##zfs:}" = "$root" ] && [ "${root##ZFS=}" = "$root" ] && [ "$rootfstype" != "zfs" ] && exit 0
 
+TZPFMS_TPM1X="$(getarg TZPFMS_TPM1X=)"
+[ -z "$TZPFMS_TPM1X" ] || export TZPFMS_TPM1X
+
+getarg 0 quiet && quiet=y
+
 
 # There is a race between the zpool import and the pre-mount hooks, so we wait for a pool to be imported
 while [ "$(zpool list -H)" = "" ]; do
@@ -48,7 +53,7 @@ if [ "$(zpool list -H -o feature@encryption "$(echo "$BOOTFS" | awk -F/ '{print 
         fi
 
         if command -v zfs-tpm1x-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" = "" ]; then
-            POTENTIALLY_START_TCSD{}
+            POTENTIALLY_START_TCSD{ss -ltO, > /dev/console 2>&1}
             with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"; err="$?"
             POTENTIALLY_KILL_TCSD{}
             exit "$err"

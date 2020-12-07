@@ -11,7 +11,8 @@
 	with_promptable_tty() {
 		if command -v plymouth > /dev/null && plymouth --ping; then
 			plymouth hide-splash
-			[ "${quiet:-n}" = "y" ] && printf '\033c'
+			# shellcheck disable=SC2217
+			[ "${quiet:-n}" = "y" ] && printf '\033c' REDIREXIONS
 
 			"$@" REDIREXIONS; ret="$?"
 
@@ -30,7 +31,7 @@
 #endefine
 
 
-#define POTENTIALLY_START_TCSD()
+#define POTENTIALLY_START_TCSD(LISTENING_TCP, REDIREXIONS)
 	[ -z "$TZPFMS_TPM1X" ] && command -v tcsd > /dev/null && {
 		ip l | awk -F '[[:space:]]*:[[:space:]]*' '{if($2 == "lo") exit $3 ~ /UP/}'
 		lo_was_up="$?"
@@ -42,10 +43,10 @@
 		if [ "${quiet:-n}" = "y" ]; then
 			tcsd -f > /tcsd.log 2>&1 &
 		else
-			tcsd -f &
+			tcsd -f REDIREXIONS &
 		fi
 		tcsd_port="$(awk -F '[[:space:]]*=[[:space:]]*' '!/^[[:space:]]*#/ && !/^$/ && $1 ~ /port$/ {gsub(/[[:space:]]/, "", $2); print $2}' /etc/tcsd.conf)"
-		i=0; while [ "$i" -lt 100 ] && ! netstat -lt | grep -q "${tcsd_port:-30003}"; do sleep 0.1; i="$((i + 1))"; done
+		i=0; while [ "$i" -lt 100 ] && ! LISTENING_TCP | grep -q "${tcsd_port:-30003}"; do sleep 0.1; i="$((i + 1))"; done
 		[ "$i" = 100 ] && echo "Couldn't start tcsd!" >&2
 	}
 #endefine

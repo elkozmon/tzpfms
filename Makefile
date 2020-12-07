@@ -62,10 +62,12 @@ $(OUTDIR)man/index.txt : $(MANDIR)index.txt $(patsubst $(MANDIR)%.pp,$(OUTDIR)ma
 $(OUTDIR)initramfs-tools/usr/share/initramfs-tools/hooks/tzpfms: $(INITRDDIR)initramfs-tools/hook $(INITRD_HEADERS)
 	@mkdir -p $(dir $@)
 	$(AWK) -f pp.awk $< > $@
+	chmod --reference $< $@
 
 $(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh: $(INITRDDIR)initramfs-tools/zfs-patch.sh $(INITRD_HEADERS)
 	@mkdir -p $(dir $@)
 	$(AWK) -f pp.awk $< > $@
+	chmod --reference $< $@
 
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))
@@ -88,3 +90,4 @@ $(OUTDIR)man/%.md : $(MANDIR)%.md.pp $(MANPAGE_HEADERS)
 $(OUTDIR)dracut/usr/lib/dracut/modules.d/91tzpfms/% : $(INITRDDIR)dracut/% $(INITRD_HEADERS)
 	@mkdir -p $(dir $@)
 	$(AWK) -f pp.awk $< > $@
+	chmod --reference $< $@
