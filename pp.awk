@@ -16,6 +16,11 @@ BEGIN {
 
 function input() {
 	if(NF == 2 && $1 == "#include") {
+		if(incfile != "") {
+			print "Nested include! (" incfile " -> " $2 ")" >> "/dev/stderr"
+			exit 1
+		}
+
 		gsub(/"/, "", $2)
 		incfile = dir $2
 
