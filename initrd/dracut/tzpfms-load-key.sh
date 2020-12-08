@@ -5,7 +5,7 @@
 #include "../mount.h"
 
 
-# Only run on systemd systems, mimicking zfs-dracut's zfs-load-key.sh, TODO: "see mount-zfs.sh for non-systemd systems"
+# Only run on systemd systems, mimicking zfs-dracut's zfs-load-key.sh; TODO: "see mount-zfs.sh for non-systemd systems", confer README
 [ -d /run/systemd ] || exit 0
 
 

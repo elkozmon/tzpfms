@@ -27,6 +27,8 @@ function input() {
 		while((getline < incfile) == 1)
 			input()
 		incfile = ""
+	} else if(NF >= 1 && $1 == "#comment") {
+		// just dont
 	} else if(NF >= 2 && $1 == "#define") {
 		split($2, nameargs, "(")
 		macroname = nameargs[1]

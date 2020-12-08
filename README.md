@@ -18,8 +18,8 @@ Essentially BitLocker, but for ZFS –
 a random raw key is generated and sealed to the TPM (both 2 and 1.x supported) with an additional optional password in front of it,
 tying the dataset to the platform and an additional optional secret (or to the posession of the back-up).
 
-Both dracut (with/without Plymouth) (with/without hostonly) and initramfs-tools (with/without Plymouth) are supported for
-[ZFS-on-root](https://nabijaczleweli.xyz/content/blogn_t/005-low-curse-zfs-on-root.html) set-ups.
+Both dracut (with/without Plymouth) (with/without hostonly) (only on systemd systems, I don't have a test-bed for the non-systemd path)
+and initramfs-tools (with/without Plymouth) are supported for [ZFS-on-root](https://nabijaczleweli.xyz/content/blogn_t/005-low-curse-zfs-on-root.html) set-ups.
 
 ### Building
 

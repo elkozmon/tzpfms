@@ -33,7 +33,8 @@ the first one represents the RSA key protecting the blob,
 and it is protected with either the password, if provided, or the SHA1 constant *CE4CF677875B5EB8993591D5A9AF1ED24A3A8736*;
 the second represents the sealed object containing the wrapping key,
 and is protected with the SHA1 constant *B9EE715DBE4B243FAA81EA04306E063710383E35*.
-There exists no other user-land tool for decrypting this. (TODO: make an LD_PRELOADable for extracting the key maybe)
+There exists no other user-land tool for decrypting this; perhaps there should be.
+#comment (TODO: make an LD_PRELOADable for extracting the key maybe)
 
 Finally, the equivalent of **zfs(8) change-key -o keylocation=prompt -o keyformat=raw dataset** is performed with the new key.
 If an error occurred, best effort is made to clean up the properties,

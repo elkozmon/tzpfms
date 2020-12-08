@@ -76,8 +76,7 @@ int do_main(int argc, char ** argv, const char * getoptions, const char * usage,
 				fprintf(stderr, "Dataset %s not encrypted?\n", zfs_get_name(dataset));
 				return __LINE__;
 			} else if(!dataset_is_root) {
-				printf("Using dataset %s's encryption root %s instead.\n", zfs_get_name(dataset), encryption_root);
-				// TODO: disallow maybe? or require force option?
+				fprintf(stderr, "Using dataset %s's encryption root %s instead.\n", zfs_get_name(dataset), encryption_root);
 				zfs_close(dataset);
 				dataset = TRY_PTR(nullptr, zfs_open(libz, encryption_root, ZFS_TYPE_FILESYSTEM | ZFS_TYPE_VOLUME));
 			}
