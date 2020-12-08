@@ -32,7 +32,8 @@ Copy the `out/zfs-tpm*` binaries corresponding to the back-ends you want to `/sb
 continue as the [manual](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man/zfs-tpm2-change-key.md) [page](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man/zfs-tpm1x-change-key.md) instructs.
 
 For initrd support, copy the content of either `out/dracut/` or `out/initramfs-tools/` over `/`;
-these need `zfs-tpm-list` but will work with any combination of back-end `*-load-key` binaries.
+these need `zfs-tpm-list` but will work with any combination of back-end `*-load-key` binaries
+(local TPM1.X initrds need to be updated when the system state changes (e.g. the TPM is taken ownership of)).
 
 <!-- #### From Debian repository
 
