@@ -35,7 +35,7 @@ For initrd support, copy the content of either `out/dracut/` or `out/initramfs-t
 these need `zfs-tpm-list` but will work with any combination of back-end `*-load-key` binaries
 (local TPM1.X initrds need to be updated when the system state changes (e.g. the TPM is taken ownership of)).
 
-<!-- #### From Debian repository
+#### From Debian repository
 
 The following line in `/etc/apt/sources.list` or equivalent:
 ```apt
@@ -52,11 +52,11 @@ sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc //keybase.io/nabijaczlewel
 Then the usual
 ```sh
 sudo apt update
-sudo apt install tzpfms
+sudo apt install tzpfms-tpm2 tzpfms-dracut
 ```
-will work on amd64, x32, and i386.
+will work on amd64 and i386 (x32 [still](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968256#15) doesn't have ZFS in Debian).
 
-See the [repository README](//debian.nabijaczleweli.xyz/README) for more information. -->
+See the [repository README](//debian.nabijaczleweli.xyz/README) for more information.
 
 ### Testing
 #### TPM2
