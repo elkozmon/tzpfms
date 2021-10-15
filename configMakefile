@@ -47,12 +47,14 @@ else
 endif
 
 TZPFMS_VERSION := "$(patsubst v%,%,$(shell git describe))"
+TZPFMS_DATE := $(shell date -d@$$(git log --no-show-signature -1 --pretty=%at) '+%B %e, %Y')
 
 INCCMAKEAR := CXXFLAGS="$(INCCXXAR)"
 LNCMAKEAR := LDFLAGS="$(LNCXXAR)"
 
 AWK ?= awk
-RONN ?= ronn
+SED ?= sed
+MANDOC ?= mandoc
 SHELLCHECK ?= shellcheck
 OBJ := .o
 CXXAR := -O3 -std=c++17 -fno-exceptions -Wall -Wextra $(CXXSPECIFIC) -pipe $(INCCXXAR) $(PIC)

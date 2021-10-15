@@ -1,7 +1,7 @@
 # tzpfms [![builds.sr.ht badge](//builds.sr.ht/~nabijaczleweli/tzpfms.svg)](https://builds.sr.ht/~nabijaczleweli/tzpfms) [![Licence](//img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 TPM-based encryption keys for ZFS datasets.
 
-## [Manpages](//git.sr.ht/~nabijaczleweli/tzpfms/tree/man)
+## [Manpages](//srhtcdn.githack.com/~nabijaczleweli/tzpfms/blob/man/zfs-tpm-list.8.html) ([PDF](//srhtcdn.githack.com/~nabijaczleweli/tzpfms/blob/man/tzpfms.pdf))
 
 ### Why?
 
@@ -23,8 +23,10 @@ and initramfs-tools (with/without Plymouth) are supported for [ZFS-on-root](http
 
 ### Building
 
-You'll need `pkg-config`, `ronn`, `shellcheck`, `libzfslinux-dev` (0.8.x and 2.0.x work), `libtss2-dev`, `libtspi-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
+You'll need `pkg-config`, `shellcheck`, `libzfslinux-dev` (0.8.x and 2.0.x work), `libtss2-dev`, `libtspi-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
 The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + the chosen TPM back-end, if any.
+
+`mandoc` is required for HTML manuals. Set `MANDOC=true` to forgo this.
 
 ### Installation
 
@@ -44,9 +46,8 @@ deb https://debian.nabijaczleweli.xyz sid main
 
 With [my PGP key](//nabijaczleweli.xyz/pgp.txt) (the two URLs are interchangeable):
 ```sh
-wget -O- https://debian.nabijaczleweli.xyz/nabijaczleweli.gpg.key | sudo apt-key add
-# or
-sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc //keybase.io/nabijaczleweli/pgp_keys.asc
+sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc https://debian.nabijaczleweli.xyz/nabijaczleweli.gpg.key
+sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc https://keybase.io/nabijaczleweli/pgp_keys.asc
 ```
 
 Then the usual
