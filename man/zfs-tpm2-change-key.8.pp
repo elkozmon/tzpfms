@@ -28,7 +28,9 @@ be TPM-2.0-compatible.
 .Pp
 If
 .Ar dataset
-was previously encrypted with tzpfms and the
+was previously encrypted with
+.Nm tzpfms
+and the
 .Sy TPM2
 back-end was used, the previous key will be freed from the TPM.
 Otherwise, or in case of an error, data required for manual intervention will be printed to the standard error stream.

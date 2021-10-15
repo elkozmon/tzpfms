@@ -1,7 +1,3 @@
-.Sh AUTHORS
-Written by
-.An наб Aq nabijaczleweli@nabijaczleweli.xyz .
-.
 .Sh SPECIAL THANKS
 To all who support further development, in particular:
 .Bl -bullet -offset 4n -compact -width 0
