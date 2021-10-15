@@ -13,7 +13,6 @@ packages:
   - curl
   - groff
   - ghostscript
-  - gsfonts
 tasks:
   - get-zfs: |
       sudo sed -i 's/main/main contrib non-free/' /etc/apt/sources.list
@@ -28,45 +27,14 @@ tasks:
       cd tzpfms
       CC=clang CXX=clang++ make
       find out/ -maxdepth 1 -type f -exec readelf -d {} +
-  # https://nabijaczleweli.xyz/content/blogn_t/007-groff-Tps-cyrillic-et-al.html
-  - prep-fonts: |
-      mkdir /tmp/devps; cd /tmp/devps
-      for f in {C,T}{R,B,I,BI}; do
-        in="$(awk '$1 == "internalname" {print $2; exit}' "/usr/share/groff/current/font/devps/$f")";
-        echo $f: $in;
-        src="$(awk -v cur="/$in" '
-          $1 ~ /^\// && $2 ~ /^[\/\(]/ {
-            if($2 ~ /^\//)
-              aliases[$1] = $2;
-            else
-              paths[$1] = $2;
-          }
-          END {
-            while(cur in aliases)
-              cur = aliases[cur];
-            if(cur in paths) {
-              sub(/^\(/, "", paths[cur]);
-              sub(/(pfb)?\)$/, "", paths[cur]);
-              print paths[cur]
-            } else {
-              print "last: " cur > "/dev/stderr";
-              exit 1
-            }
-          }' /var/lib/ghostscript/fonts/Fontmap)";
-        echo ${src}afm;
-        afmtodit $(expr "$f" : C > /dev/null && printf -- -n) -cmi0 \
-          -d /usr/share/groff/current/font/devps/DESC \
-          -e /usr/share/groff/current/font/devps/text.enc \
-          "${src}afm" /usr/share/groff/current/font/devps/generate/textmap "$f";
-      done
   - manpages: |
       git -C tzpfms/ worktree add ../tzpfms-man man
       cd tzpfms-man
       git ls-tree -z --name-only HEAD | xargs -0 rm -r
       cp -pr ../tzpfms/out/man/* .
-      git add .
       sed -e 's/…/.../g' $(ls *.[12345678] | awk -F. '{print $2 "\t" $1}' | sort | awk -F'\t' '{print $2 "." $1}') | groff -K utf8 -tpe -mdoc -Tps > tzpfms.ps
       ps2pdf tzpfms.ps tzpfms.pdf
+      git add .
       git config user.email "nabijaczleweli/autouploader@nabijaczleweli.xyz"
       git config user.name "наб autouploader"
       git commit -m "Manpage update by job $JOB_ID" || exit 0
