@@ -14,12 +14,11 @@ PREREQ="zfs"
 #                which should be compatible with other hooks doing the same thing
 [ "${verbose:-n}" = "y" ] && echo "Patching /scripts/zfs"
 sed -Ei 's/^decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
-cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh  >> "$DESTDIR/scripts/zfs"
+cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh >> "$DESTDIR/scripts/zfs"
 
 
 for x in zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key tpm_resetdalock tcsd $(find /usr/lib -name 'libtss2-tcti*.so*'); do  # TODO: there's got to be a better way™!
-	xloc="$(command -v "$x")"
-	[ "$xloc" = "" ] || copy_exec "$xloc"
+	xloc="$(command -v "$x")" && copy_exec "$xloc"
 done
 
 INSTALL_TPM1X{, DESTDIR, copy_file rule, copy_file config, copy_file state, copy_exec}

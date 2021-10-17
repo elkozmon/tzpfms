@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: MIT
+.
 .Sh TPM1.X back-end configuration
 .Ss TPM selection
 The

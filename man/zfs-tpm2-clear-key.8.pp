@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: MIT
+.
 .Dd
 .Dt ZFS-TPM2-CLEAR-KEY 8
 .Os

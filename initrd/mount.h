@@ -9,7 +9,7 @@
 	# Instead, clear if there's a "quiet", leave alone otherwise, and always restore;
 	# cmdline option "plymouth.ignore-show-splash" can be used to disable splashes altogether, if desired.
 	with_promptable_tty() {
-		if command -v plymouth > /dev/null && plymouth --ping; then
+		if plymouth --ping 2>/dev/null; then
 			plymouth hide-splash
 			# shellcheck disable=SC2217
 			[ "${quiet:-n}" = "y" ] && printf '\033c' REDIREXIONS
@@ -19,7 +19,7 @@
 			plymouth show-splash
 		else
 			# Mimic /scripts/zfs#decrypt_fs(): setting "printk" temporarily to "7" will allow prompt even if kernel option "quiet"
-			printk="$(awk '{print $1}' /proc/sys/kernel/printk)"
+			read -r printk _ < /proc/sys/kernel/printk
 			[ "$printk" = "7" ] || echo 7 > /proc/sys/kernel/printk
 
 			"$@" REDIREXIONS; ret="$?"

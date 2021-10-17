@@ -17,17 +17,17 @@ decrypt_fs() {
 
 	# First three lines borrowed from /scripts/zfs#decrypt_fs()
 	# If pool encryption is active and the zfs command understands '-o encryption'
-	if [ "$(zpool list -H -o feature@encryption "$(echo "$fs" | awk -F/ '{print $1}')")" = "active" ]; then
+	if [ "$(zpool list -H -o feature@encryption "${fs%%/*}")" = "active" ]; then
 		ENCRYPTIONROOT="$(get_fs_value "$fs" encryptionroot)"
 
 		if ! [ "$ENCRYPTIONROOT" = "-" ]; then
 			# Match this sexion to dracut/tzpfms-load-key.sh
-			if command -v zfs-tpm2-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM2 "$ENCRYPTIONROOT")" = "" ]; then
+			if command -v zfs-tpm2-load-key > /dev/null && [ -n "$(zfs-tpm-list -Hub TPM2 "$ENCRYPTIONROOT")" ]; then
 				with_promptable_tty zfs-tpm2-load-key "$ENCRYPTIONROOT"
 				return
 			fi
 
-			if command -v zfs-tpm1x-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" = "" ]; then
+			if command -v zfs-tpm1x-load-key > /dev/null && [ -n "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" ]; then
 				POTENTIALLY_START_TCSD{netstat -lt, }
 				with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"; err="$?"
 				POTENTIALLY_KILL_TCSD{}

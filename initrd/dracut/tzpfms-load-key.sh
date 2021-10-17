@@ -42,17 +42,17 @@ WITH_PROMPTABLE_TTY{< /dev/console > /dev/console 2>&1}
 
 
 # If pool encryption is active and the zfs command understands '-o encryption'
-if [ "$(zpool list -H -o feature@encryption "$(echo "$BOOTFS" | awk -F/ '{print $1}')")" = "active" ]; then
+if [ "$(zpool list -H -o feature@encryption "${BOOTFS%%/*}")" = "active" ]; then
     ENCRYPTIONROOT="$(zfs get -H -o value encryptionroot "$BOOTFS")"
 
     if ! [ "${ENCRYPTIONROOT}" = "-" ]; then
         # Match this sexion to i-t/zfs-patch.sh
-        if command -v zfs-tpm2-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM2 "$ENCRYPTIONROOT")" = "" ]; then
+        if command -v zfs-tpm2-load-key > /dev/null && [ -n "$(zfs-tpm-list -Hub TPM2 "$ENCRYPTIONROOT")" ]; then
             with_promptable_tty zfs-tpm2-load-key "$ENCRYPTIONROOT"
             exit
         fi
 
-        if command -v zfs-tpm1x-load-key > /dev/null && ! [ "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" = "" ]; then
+        if command -v zfs-tpm1x-load-key > /dev/null && [ -n "$(zfs-tpm-list -Hub TPM1.X "$ENCRYPTIONROOT")" ]; then
             POTENTIALLY_START_TCSD{ss -ltO, > /dev/console 2>&1}
             with_promptable_tty zfs-tpm1x-load-key "$ENCRYPTIONROOT"; err="$?"
             POTENTIALLY_KILL_TCSD{}

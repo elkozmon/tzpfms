@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: MIT
+.
 .Sh SPECIAL THANKS
 To all who support further development, in particular:
 .Bl -bullet -offset 4n -compact -width 0

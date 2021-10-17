@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: MIT
+.
 .Dd
 .Dt ZFS-TPM2-CHANGE-KEY 8
 .Os

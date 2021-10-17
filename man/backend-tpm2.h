@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: MIT
+.
 .Sh TPM2 back-end configuration
 .Ss Environment variables
 .Bl -tag -compact -width "TSS2_LOG"

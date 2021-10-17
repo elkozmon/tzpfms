@@ -1,3 +1,5 @@
+.\" SPDX-License-Identifier: MIT
+.
 .Dd
 .Dt ZFS-TPM1X-LOAD-KEY 8
 .Os
