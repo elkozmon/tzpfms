@@ -37,11 +37,11 @@ and the
 back-end was used, the metadata will be silently cleared.
 Otherwise, or in case of an error, data required for manual intervention will be printed to the standard error stream.
 .Pp
-Next, a new wrapping key is be generated on the TPM, optionally backed up
+Next, a new wrapping key is generated on the TPM, optionally backed up
 .Pq see Sx OPTIONS ,
 and sealed on the TPM;
 the user is prompted for an optional passphrase to protect the key with,
-and for the SRK passphrase, set when taking ownership, if it is not "well-known" (all zeroes).
+and for the SRK passphrase, set when taking ownership, if not "well-known" (all zeroes).
 .Pp
 The following properties are set on
 .Ar dataset :

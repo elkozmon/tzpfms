@@ -6,7 +6,7 @@
 .
 .Sh NAME
 .Nm zfs-tpm1x-load-key
-.Nd load tzpfms TPM1.X-encrypted ZFS dataset key
+.Nd load TPM1.X-encrypted ZFS dataset key
 .Sh SYNOPSIS
 .Nm
 .Op Fl n
@@ -22,8 +22,8 @@ backend
 will unseal the key and load it into
 .Ar dataset .
 .Pp
-The user is prompted for, first, the SRK passphrase, set when taking ownership, if it's not "well-known" (all zeroes),
-then the additional passphrase set when creating the key, if it was provided.
+The user is first prompted for the SRK passphrase, set when taking ownership, if not "well-known" (all zeroes);
+then for the additional passphrase, set when creating the key, if one was set.
 .Pp
 See
 .Xr zfs-tpm1x-change-key 8

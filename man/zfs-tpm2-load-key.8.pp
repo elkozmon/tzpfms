@@ -6,7 +6,7 @@
 .
 .Sh NAME
 .Nm zfs-tpm2-load-key
-.Nd load tzpfms TPM2-encrypted ZFS dataset key
+.Nd load TPM2-encrypted ZFS dataset key
 .Sh SYNOPSIS
 .Nm
 .Op Fl n
@@ -21,6 +21,8 @@ backend
 .Sy TPM2 ,
 unseals the key and loads it into
 .Ar dataset .
+.Pp
+The user is prompted for the additional passphrase, set when creating the key, if one was set.
 .Pp
 See
 .Xr zfs-tpm2-change-key 8

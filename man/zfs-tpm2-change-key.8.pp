@@ -37,7 +37,7 @@ and the
 back-end was used, the previous key will be freed from the TPM.
 Otherwise, or in case of an error, data required for manual intervention will be printed to the standard error stream.
 .Pp
-Next, a new wrapping key is be generated on the TPM, optionally backed up
+Next, a new wrapping key is generated on the TPM, optionally backed up
 .Pq see Sx OPTIONS ,
 and sealed to a persistent object on the TPM under the owner hierarchy;
 if there is a passphrase set on the owner hierarchy, the user is prompted for it;

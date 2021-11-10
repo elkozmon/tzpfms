@@ -49,18 +49,15 @@ program or
 and
 .Nm zfs Cm inherit
 \(em if the key becomes unloaded, they will require restoration from back-up.
-However, they should never occur, unless something went terribly wrong with the dataset properties.
+However, this should never occur, unless something went horribly wrong with the dataset properties.
 .Pp
-If no datasets are specified, lists all matching encryption roots.
-The default filter is to list all roots managed by
+If no datasets are specified, all matching encryption roots are listed \(em by default, those managed by
 .Nm tzpfms .
-.Fl ab
-can be used to either list all roots or only ones backed by a particular end, respectively.
 .
 .Sh OPTIONS
 .Bl -tag -compact -width "-b back-end"
 .It Fl H
-Scripting mode \(em do not print headers and separate fields by a single tab instead of columnating with spaces.
+Scripting mode \(em remove headers and separate fields by a single tab instead of columnating them with spaces.
 .Pp
 .It Fl r
 Recurse into all descendants of specified datasets.
@@ -75,9 +72,8 @@ Default:
 List all encryption roots, even ones not managed by
 .Nm tzpfms .
 .It Fl b Ar back-end
-List only encryption roots with
-.Ar tzpfms
-back-end
+List only encryption roots with the specified
+.Nm tzpfms
 .Ar back-end .
 .Pp
 .It Fl l
