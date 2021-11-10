@@ -23,10 +23,8 @@ tpm1x_handle::~tpm1x_handle() {
 
 int tpm1x_parse_handle(const char * dataset_name, char * handle_s, tpm1x_handle & handle) {
 	auto midpoint = strchr(handle_s, ':');
-	if(!midpoint) {
-		fprintf(stderr, "Dataset %s's handle %s not valid.\n", dataset_name, handle_s);
-		return __LINE__;
-	}
+	if(!midpoint)
+		return fprintf(stderr, "Dataset %s's handle %s not valid.\n", dataset_name, handle_s), __LINE__;
 	*midpoint = '\0';
 
 	auto parent_key_wide_blob    = handle_s;

@@ -32,10 +32,8 @@ static int try_or_passphrase(const char * what, const char * what_for, ESYS_CONT
 	}
 
 	// TRY_TPM2() unrolled because no constexpr/string-literal-template arguments until C++20, which is not supported by GCC 8, which we need for Buster
-	if(err != TPM2_RC_SUCCESS) {
-		fprintf(stderr, "Couldn't %s: %s\n", what, Tss2_RC_Decode(err));
-		return __LINE__;
-	}
+	if(err != TPM2_RC_SUCCESS)
+		return fprintf(stderr, "Couldn't %s: %s\n", what, Tss2_RC_Decode(err)), __LINE__;
 
 	return 0;
 }
@@ -58,10 +56,8 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 
 
 int tpm2_parse_handle(const char * dataset_name, const char * handle_s, TPMI_DH_PERSISTENT & handle) {
-	if(parse_int(handle_s, handle)) {
-		fprintf(stderr, "Dataset %s's handle %s not valid.\n", dataset_name, handle_s);
-		return __LINE__;
-	}
+	if(parse_int(handle_s, handle))
+		return fprintf(stderr, "Dataset %s's handle %s not valid.\n", dataset_name, handle_s), __LINE__;
 
 	return 0;
 }
@@ -72,10 +68,8 @@ int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length) {
 	TRY_TPM2("get random data from TPM", Esys_GetRandom(tpm2_ctx, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, length, &rand));
 	quickscope_wrapper rand_deleter{[=] { Esys_Free(rand); }};
 
-	if(rand->size != length) {
-		fprintf(stderr, "Wrong random size: wanted %zu, got %" PRIu16 " bytes.\n", length, rand->size);
-		return __LINE__;
-	}
+	if(rand->size != length)
+		return fprintf(stderr, "Wrong random size: wanted %zu, got %" PRIu16 " bytes.\n", length, rand->size), __LINE__;
 
 	memcpy(into, rand->buffer, length);
 	return 0;
@@ -103,10 +97,8 @@ static int tpm2_find_unused_persistent_non_platform(ESYS_CONTEXT * tpm2_ctx, TPM
 				}
 	}
 
-	if(!persistent_handle) {
-		fprintf(stderr, "All %zu persistent handles allocated! We're fucked!\n", TPM2_MAX_CAP_HANDLES);
-		return __LINE__;
-	}
+	if(!persistent_handle)
+		return fprintf(stderr, "All %zu persistent handles allocated! We're fucked!\n", TPM2_MAX_CAP_HANDLES), __LINE__;
 	return 0;
 }
 
@@ -232,10 +224,8 @@ int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTEN
 	TRY_MAIN(try_or_passphrase("unseal wrapping key", "wrapping key", tpm2_ctx, TPM2_RC_AUTH_FAIL, pandle,
 	                           [&] { return Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed); }));
 
-	if(unsealed->size != data_len) {
-		fprintf(stderr, "Unsealed data has wrong length %" PRIu16 ", expected %zu!\n", unsealed->size, data_len);
-		return __LINE__;
-	}
+	if(unsealed->size != data_len)
+		return fprintf(stderr, "Unsealed data has wrong length %" PRIu16 ", expected %zu!\n", unsealed->size, data_len), __LINE__;
 	memcpy(data, unsealed->buffer, data_len);
 	return 0;
 }

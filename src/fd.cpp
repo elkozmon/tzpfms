@@ -41,10 +41,8 @@ int read_exact(const char * path, void * data, size_t len) {
 		if(const auto rd = TRY("read input file", read(infd, data, len))) {
 			len -= rd;
 			data = static_cast<char *>(data) + rd;
-		} else {
-			fprintf(stderr, "Couldn't read %zu bytes from input file: too short\n", len);
-			return __LINE__;
-		}
+		} else
+			return fprintf(stderr, "Couldn't read %zu bytes from input file: too short\n", len), __LINE__;
 
 	return 0;
 }
@@ -159,24 +157,18 @@ int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, siz
 	TRY_MAIN(get_key_material_raw(whom, false, true, first_passphrase, first_passphrase_len));
 	quickscope_wrapper first_passphrase_deleter{[&] { free(first_passphrase); }};
 
-	if(first_passphrase_len != 0 && first_passphrase_len < MIN_PASSPHRASE_LEN) {
-		fprintf(stderr, "Passphrase too short (min %u)\n", MIN_PASSPHRASE_LEN);
-		return __LINE__;
-	}
-	if(first_passphrase_len > max_len) {
-		fprintf(stderr, "Passphrase too long (max %zu)\n", max_len);
-		return __LINE__;
-	}
+	if(first_passphrase_len != 0 && first_passphrase_len < MIN_PASSPHRASE_LEN)
+		return fprintf(stderr, "Passphrase too short (min %u)\n", MIN_PASSPHRASE_LEN), __LINE__;
+	if(first_passphrase_len > max_len)
+		return fprintf(stderr, "Passphrase too long (max %zu)\n", max_len), __LINE__;
 
 	uint8_t * second_passphrase{};
 	size_t second_passphrase_len{};
 	TRY_MAIN(get_key_material_raw(whom, true, true, second_passphrase, second_passphrase_len));
 	quickscope_wrapper second_passphrase_deleter{[&] { free(second_passphrase); }};
 
-	if(second_passphrase_len != first_passphrase_len || memcmp(first_passphrase, second_passphrase, first_passphrase_len)) {
-		fprintf(stderr, "Provided keys do not match.\n");
-		return __LINE__;
-	}
+	if(second_passphrase_len != first_passphrase_len || memcmp(first_passphrase, second_passphrase, first_passphrase_len))
+		return fprintf(stderr, "Provided keys do not match.\n"), __LINE__;
 
 	if(second_passphrase_len) {
 		buf               = second_passphrase;

@@ -104,9 +104,7 @@ int clear_key_props(zfs_handle_t * from) {
 
 	TRY("delete tzpfms.backend", zfs_prop_inherit(from, PROPNAME_BACKEND, B_FALSE));
 	TRY("delete tzpfms.key", zfs_prop_inherit(from, PROPNAME_KEY, B_FALSE));
-
-	ok = true;
-	return 0;
+	return ok = true, 0;
 }
 
 
@@ -114,20 +112,14 @@ int parse_key_props(zfs_handle_t * in, const char * our_backend, char *& handle)
 	char * backend{};
 	TRY_MAIN(lookup_userprop(in, PROPNAME_BACKEND, backend));
 
-	if(!backend) {
-		fprintf(stderr, "Dataset %s not encrypted with tzpfms!\n", zfs_get_name(in));
-		return __LINE__;
-	}
-	if(strcmp(backend, our_backend)) {
-		fprintf(stderr, "Dataset %s encrypted with tzpfms back-end %s, but we are %s.\n", zfs_get_name(in), backend, our_backend);
-		return __LINE__;
-	}
+	if(!backend)
+		return fprintf(stderr, "Dataset %s not encrypted with tzpfms!\n", zfs_get_name(in)), __LINE__;
+	if(strcmp(backend, our_backend))
+		return fprintf(stderr, "Dataset %s encrypted with tzpfms back-end %s, but we are %s.\n", zfs_get_name(in), backend, our_backend), __LINE__;
 
 	TRY_MAIN(lookup_userprop(in, PROPNAME_KEY, handle));
-	if(!handle) {
-		fprintf(stderr, "Dataset %s missing key data.\n", zfs_get_name(in));
-		return __LINE__;
-	}
+	if(!handle)
+		return fprintf(stderr, "Dataset %s missing key data.\n", zfs_get_name(in)), __LINE__;
 
 	return 0;
 }

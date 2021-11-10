@@ -23,8 +23,7 @@
 #define REQUIRE_KEY_LOADED(dataset)                                                  \
 	do {                                                                               \
 		if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) { \
-			fprintf(stderr, "Key change error: Key must be loaded.\n");                    \
-			return __LINE__;                                                               \
+			return fprintf(stderr, "Key change error: Key must be loaded.\n"), __LINE__;   \
 		}                                                                                \
 	} while(0)
 

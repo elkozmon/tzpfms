@@ -80,11 +80,8 @@ int try_policy_or_passphrase(const char * what, const char * what_for, TSS_HPOLI
 	}
 
 	// TRY_TPM1X() unrolled because no constexpr/string-literal-template arguments until C++20, which is not supported by GCC 8, which we need for Buster
-	if(err != TPM_SUCCESS) {
-		fprintf(stderr, "Couldn't %s: %s\n", what, Trspi_Error_String(err));
-		return __LINE__;
-	}
-
+	if(err != TPM_SUCCESS)
+		return fprintf(stderr, "Couldn't %s: %s\n", what, Trspi_Error_String(err)), __LINE__;
 	return 0;
 }
 

@@ -73,8 +73,7 @@ int main(int argc, char ** argv) {
 				    char persistent_handle_s[2 + sizeof(persistent_handle) * 2 + 1];
 				    if(auto written = snprintf(persistent_handle_s, sizeof(persistent_handle_s), "0x%" PRIX32, persistent_handle);
 				       written < 0 || written >= static_cast<int>(sizeof(persistent_handle_s))) {
-					    fprintf(stderr, "Truncated persistent_handle name? %d/%zu\n", written, sizeof(persistent_handle_s));
-					    return __LINE__;
+					    return fprintf(stderr, "Truncated persistent_handle name? %d/%zu\n", written, sizeof(persistent_handle_s)), __LINE__;
 				    }
 				    TRY_MAIN(set_key_props(dataset, THIS_BACKEND, persistent_handle_s));
 			    }
