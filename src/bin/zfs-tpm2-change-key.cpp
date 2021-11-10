@@ -5,6 +5,7 @@
 // #include <sys/zio_crypt.h>
 #define WRAPPING_KEY_LEN 32
 
+#include <inttypes.h>
 #include <stdio.h>
 
 #include "../fd.hpp"
@@ -44,7 +45,9 @@ int main(int argc, char ** argv) {
 					            zfs_get_name(dataset), previous_handle_s);
 				    else {
 					    if(tpm2_free_persistent(tpm2_ctx, tpm2_session, previous_handle))
-						    fprintf(stderr, "Couldn't free previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n",
+						    fprintf(stderr,
+						            "Couldn't free previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c 0x%" PRIX32
+						            "\" or equivalent!\n",
 						            zfs_get_name(dataset), previous_handle);
 				    }
 			    }));
@@ -60,14 +63,15 @@ int main(int argc, char ** argv) {
 			    bool ok = false;  // Try to free the persistent handle if we're unsuccessful in actually using it later on
 			    quickscope_wrapper persistent_clearer{[&] {
 				    if(!ok && tpm2_free_persistent(tpm2_ctx, tpm2_session, persistent_handle))
-					    fprintf(stderr, "Couldn't free persistent handle. You might need to run \"tpm2_evictcontrol -c 0x%X\" or equivalent!\n", persistent_handle);
+					    fprintf(stderr, "Couldn't free persistent handle. You might need to run \"tpm2_evictcontrol -c 0x%" PRIX32 "\" or equivalent!\n",
+					            persistent_handle);
 				    if(!ok)
 					    clear_key_props(dataset);
 			    }};
 
 			    {
 				    char persistent_handle_s[2 + sizeof(persistent_handle) * 2 + 1];
-				    if(auto written = snprintf(persistent_handle_s, sizeof(persistent_handle_s), "0x%X", persistent_handle);
+				    if(auto written = snprintf(persistent_handle_s, sizeof(persistent_handle_s), "0x%" PRIX32, persistent_handle);
 				       written < 0 || written >= static_cast<int>(sizeof(persistent_handle_s))) {
 					    fprintf(stderr, "Truncated persistent_handle name? %d/%zu\n", written, sizeof(persistent_handle_s));
 					    return __LINE__;

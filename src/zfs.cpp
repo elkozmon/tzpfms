@@ -98,8 +98,8 @@ int clear_key_props(zfs_handle_t * from) {
 	bool ok = false;
 	quickscope_wrapper props_deleter{[&] {
 		if(!ok)
-			fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\"!\n", PROPNAME_BACKEND, zfs_get_name(from), PROPNAME_KEY,
-			        zfs_get_name(from));
+			fprintf(stderr, "You might need to run \"zfs inherit %s %s\" and \"zfs inherit %s %s\" to fully clear metadata!\n", PROPNAME_BACKEND, zfs_get_name(from),
+			        PROPNAME_KEY, zfs_get_name(from));
 	}};
 
 	TRY("delete tzpfms.backend", zfs_prop_inherit(from, PROPNAME_BACKEND, B_FALSE));

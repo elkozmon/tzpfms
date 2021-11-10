@@ -5,6 +5,7 @@
 // #include <sys/zio_crypt.h>
 #define WRAPPING_KEY_LEN 32
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,7 +65,7 @@ int main(int argc, char ** argv) {
 			    TRY_MAIN(try_policy_or_passphrase("unseal wrapping key", "wrapping key", parent_key_policy,
 			                                      [&] { return Tspi_Data_Unseal(sealed_object, parent_key, &loaded_wrap_key_len, &loaded_wrap_key); }));
 			    if(loaded_wrap_key_len != sizeof(wrap_key)) {
-				    fprintf(stderr, "Wrong sealed data length (%u != %zu):", loaded_wrap_key_len, sizeof(wrap_key));
+				    fprintf(stderr, "Wrong sealed data length (%" PRIu32 " != %zu): ", loaded_wrap_key_len, sizeof(wrap_key));
 				    for(auto i = 0u; i < loaded_wrap_key_len; ++i)
 					    fprintf(stderr, "%02X", loaded_wrap_key[i]);
 				    fprintf(stderr, "\n");

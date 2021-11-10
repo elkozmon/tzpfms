@@ -22,7 +22,7 @@
 
 
 /// Used as default secret if passphrase wasn't provided for wrapping key for the sealed object
-// I just got this out of /dev/random
+// I just got this out of /dev/random, for greppers: CE4CF677875B5EB8993591D5A9AF1ED24A3A8736
 static const constexpr uint8_t parent_key_secret[TPM_SHA1_160_HASH_LEN]{0xCE, 0x4C, 0xF6, 0x77, 0x87, 0x5B, 0x5E, 0xB8, 0x99, 0x35,
                                                                         0x91, 0xD5, 0xA9, 0xAF, 0x1E, 0xD2, 0x4A, 0x3A, 0x87, 0x36};
 

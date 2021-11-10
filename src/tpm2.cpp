@@ -7,6 +7,7 @@
 #include "parse.hpp"
 
 #include <algorithm>
+#include <inttypes.h>
 #include <time.h>
 
 
@@ -46,12 +47,12 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 	const auto now    = time(nullptr);
 	const auto now_tm = localtime(&now);
 	metadata.size     = snprintf((char *)metadata.buffer, sizeof(metadata.buffer), "%s %d-%02d-%02dT%02d:%02d:%02d %s", dataset_name,           //
-                           now_tm->tm_year + 1900, now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_hour, now_tm->tm_min, now_tm->tm_sec,  //
-                           TZPFMS_VERSION) +
+	                             now_tm->tm_year + 1900, now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_hour, now_tm->tm_min, now_tm->tm_sec,  //
+	                             TZPFMS_VERSION) +
 	                1;
 	metadata.size = metadata.size > sizeof(metadata.buffer) ? sizeof(metadata.buffer) : metadata.size;
 
-	// fprintf(stderr, "%d/%zu: \"%s\"\n", metadata.size, sizeof(metadata.buffer), metadata.buffer);
+	// fprintf(stderr, "%" PRIu16 "/%zu: \"%s\"\n", metadata.size, sizeof(metadata.buffer), metadata.buffer);
 	return metadata;
 }
 
@@ -72,7 +73,7 @@ int tpm2_generate_rand(ESYS_CONTEXT * tpm2_ctx, void * into, size_t length) {
 	quickscope_wrapper rand_deleter{[=] { Esys_Free(rand); }};
 
 	if(rand->size != length) {
-		fprintf(stderr, "Wrong random size: wanted %zu, got %u bytes.\n", length, rand->size);
+		fprintf(stderr, "Wrong random size: wanted %zu, got %" PRIu16 " bytes.\n", length, rand->size);
 		return __LINE__;
 	}
 
@@ -232,7 +233,7 @@ int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTEN
 	                           [&] { return Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed); }));
 
 	if(unsealed->size != data_len) {
-		fprintf(stderr, "Unsealed data has wrong length %u, expected %zu!\n", unsealed->size, data_len);
+		fprintf(stderr, "Unsealed data has wrong length %" PRIu16 ", expected %zu!\n", unsealed->size, data_len);
 		return __LINE__;
 	}
 	memcpy(data, unsealed->buffer, data_len);
