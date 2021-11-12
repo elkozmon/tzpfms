@@ -68,7 +68,7 @@ $(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh: $(INITRD
 # Can't put it at the very top, since man(1) only loads mdoc *after* the first mdoc macro (.Dd in our case)
 $(OUTDIR)man/% : $(MANDIR)%.pp $(MANPAGE_HEADERS)
 	@mkdir -p $(dir $@)
-	( cd $(dir $<) && $(CXX) -Wno-invalid-pp-token -E - ) < $< | $(AWK) '/^$$/ {prev_empty=1; next} $$1 == "#" && $$2 ~ /^[0-9]*$$/ {prev_empty=0; next}  {if(prev_empty) print ""; prev_empty=0; print}' | $(AWK) '$$0 == ".Dd" {$$2 = "$(TZPFMS_DATE)"}  $$1 == ".Dt" { print ".ds doc-volume-operating-system" }  $$0 == ".Os" {$$2 = "tzpfms"; $$3 = "$(TZPFMS_VERSION)"}  {print}' > $@
+	$(AWK) -f pp.awk $< | $(AWK) '/^$$/ {prev_empty=1; next} $$1 == "#" && $$2 ~ /^[0-9]*$$/ {prev_empty=0; next}  {if(prev_empty) print ""; prev_empty=0; print}' | $(AWK) '$$0 == ".Dd" {$$2 = "$(TZPFMS_DATE)"}  $$1 == ".Dt" { print ".ds doc-volume-operating-system" }  $$0 == ".Os" {$$2 = "tzpfms"; $$3 = "$(TZPFMS_VERSION)"}  {print}' > $@
 	! $(MANDOC) -Tlint $@ 2>&1 | grep -vE -e 'mandoc: outdated mandoc.db' -e 'STYLE: referenced manual not found' -e 'STYLE: operating system explicitly specified: Os tzpfms' -e 'WARNING: cross reference to self: Xr zfs-tpm.*-change-key 8' -e 'STYLE: input text line longer than 80 bytes'
 # The "WARNING: unknown font, skipping request: TS.+fC[RBI]" one: see https://bugs.debian.org/992002
 

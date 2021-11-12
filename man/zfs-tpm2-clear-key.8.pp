@@ -21,7 +21,7 @@ backend
 .Bl -enum -compact -offset 4n -width ""
 .It
 performs the equivalent of
-.Nm zfs Cm change-key Fl o Li keylocation=prompt Fl o Li  keyformat=passphrase Ar dataset ,
+.Nm zfs Cm change-key Fl o Li keylocation=prompt Fl o Li keyformat=passphrase Ar dataset ,
 .It
 frees the sealed key previously used to encrypt
 .Ar dataset ,
