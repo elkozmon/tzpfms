@@ -213,12 +213,14 @@ static int get_key_material_raw(const char * whom, bool again, bool newkey, uint
 }
 
 static int get_key_material_dispatch(const char * whom, bool again, bool newkey, uint8_t *& buf, size_t & len_out) {
-	static const char * helper = getenv("TZPFMS_PASSPHRASE_HELPER");
+	static const char * helper{};
+	if(!helper)
+		helper = getenv("TZPFMS_PASSPHRASE_HELPER");
 	if(helper && *helper) {
 		if(auto err = get_key_material_helper(helper, whom, again, newkey, buf, len_out); err != -1)
 			return err;
 		else
-			helper = nullptr;
+			helper = "";
 	}
 	return get_key_material_raw(whom, again, newkey, buf, len_out);
 }
