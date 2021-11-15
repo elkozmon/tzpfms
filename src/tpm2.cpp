@@ -34,20 +34,16 @@ static int try_or_passphrase(const char * what, const char * what_for, ESYS_CONT
 	// TRY_TPM2() unrolled because no constexpr/string-literal-template arguments until C++20, which is not supported by GCC 8, which we need for Buster
 	if(err != TPM2_RC_SUCCESS)
 		return fprintf(stderr, "Couldn't %s: %s\n", what, Tss2_RC_Decode(err)), __LINE__;
-
 	return 0;
 }
 
 
 TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
-	TPM2B_DATA metadata{};
+	TPM2B_DATA metadata{}; // 64 bytesish
 
-	const auto now    = time(nullptr);
-	const auto now_tm = localtime(&now);
-	metadata.size     = snprintf((char *)metadata.buffer, sizeof(metadata.buffer), "%s %d-%02d-%02dT%02d:%02d:%02d %s", dataset_name,           //
-                           now_tm->tm_year + 1900, now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_hour, now_tm->tm_min, now_tm->tm_sec,  //
-                           TZPFMS_VERSION) +
-	                1;
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+	metadata.size = snprintf((char *)metadata.buffer, sizeof(metadata.buffer), "%" PRIu64 ".%09ld %s %s", ts.tv_sec, ts.tv_nsec, dataset_name, TZPFMS_VERSION) + 1;
 	metadata.size = metadata.size > sizeof(metadata.buffer) ? sizeof(metadata.buffer) : metadata.size;
 
 	// fprintf(stderr, "%" PRIu16 "/%zu: \"%s\"\n", metadata.size, sizeof(metadata.buffer), metadata.buffer);
