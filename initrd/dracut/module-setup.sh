@@ -34,7 +34,6 @@ _install_tpm1x() {
 check() {
 	command -v zfs-tpm-list > /dev/null || return 1
 
-  # shellcheck disable=SC2154
   if [ -n "$hostonly" ]; then
 		_get_backend || return
 

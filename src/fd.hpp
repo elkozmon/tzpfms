@@ -37,5 +37,5 @@ extern int write_exact(const char * path, const void * data, size_t len, mode_t 
 /// Prompt for passphrase for whom the user knows, up to max_len bytes
 extern int read_known_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, size_t max_len = SIZE_MAX);
 
-/// Prompt twive for passphrase for whom the user is setting
+/// Prompt twice for passphrase for whom the user is setting
 extern int read_new_passphrase(const char * whom, uint8_t *& buf, size_t & len_out, size_t max_len = SIZE_MAX);

@@ -59,7 +59,8 @@ int main(int argc, char ** argv) {
 			    if(backup)
 				    TRY_MAIN(write_exact(backup, wrap_key, sizeof(wrap_key), 0400));
 
-			    TRY_MAIN(tpm2_seal(tpm2_ctx, tpm2_session, persistent_handle, tpm2_creation_metadata(zfs_get_name(dataset)), wrap_key, sizeof(wrap_key)));
+			    TRY_MAIN(tpm2_seal(zfs_get_name(dataset), tpm2_ctx, tpm2_session, persistent_handle, tpm2_creation_metadata(zfs_get_name(dataset)), wrap_key,
+			                       sizeof(wrap_key)));
 			    bool ok = false;  // Try to free the persistent handle if we're unsuccessful in actually using it later on
 			    quickscope_wrapper persistent_clearer{[&] {
 				    if(!ok && tpm2_free_persistent(tpm2_ctx, tpm2_session, persistent_handle))

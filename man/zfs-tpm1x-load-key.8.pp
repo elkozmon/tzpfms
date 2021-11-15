@@ -39,6 +39,8 @@ Equivalent to
 option.
 .El
 .
+#include "passphrase.h"
+.
 #include "backend-tpm1x.h"
 .
 #include "common.h"

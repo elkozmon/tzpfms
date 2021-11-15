@@ -20,11 +20,10 @@
 
 
 /// Mimic libzfs error output
-#define REQUIRE_KEY_LOADED(dataset)                                                  \
-	do {                                                                               \
-		if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) { \
-			return fprintf(stderr, "Key change error: Key must be loaded.\n"), __LINE__;   \
-		}                                                                                \
+#define REQUIRE_KEY_LOADED(dataset)                                                \
+	do {                                                                             \
+		if(zfs_prop_get_int(dataset, ZFS_PROP_KEYSTATUS) == ZFS_KEYSTATUS_UNAVAILABLE) \
+			return fprintf(stderr, "Key change error: Key must be loaded.\n"), __LINE__; \
 	} while(0)
 
 

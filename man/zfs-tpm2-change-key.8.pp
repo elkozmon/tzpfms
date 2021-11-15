@@ -98,6 +98,8 @@ In case of a catastrophic event, the key can be loaded by running
 .Dl Nm zfs Cm load-key Ar dataset Li < Ar backup-file
 .El
 .
+#include "passphrase.h"
+.
 #include "backend-tpm2.h"
 .
 #include "common.h"

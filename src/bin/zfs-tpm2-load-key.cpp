@@ -30,7 +30,7 @@ int main(int argc, char ** argv) {
 
 		    uint8_t wrap_key[WRAPPING_KEY_LEN];
 		    TRY_MAIN(with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
-			    TRY_MAIN(tpm2_unseal(tpm2_ctx, tpm2_session, handle, wrap_key, sizeof(wrap_key)));
+			    TRY_MAIN(tpm2_unseal(zfs_get_name(dataset), tpm2_ctx, tpm2_session, handle, wrap_key, sizeof(wrap_key)));
 			    return 0;
 		    }));
 

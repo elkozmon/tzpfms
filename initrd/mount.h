@@ -4,28 +4,26 @@
 #define WITH_PROMPTABLE_TTY(REDIREXIONS)
 	# This sucks a lot of ass, since we don't know the questions or the amount thereof beforehand
 	# (0-2 (owner hierarchy/ownership + sealed object, both optional) best-case and 0-6 worst-case (both entered wrong twice)).
-	# Plymouth doesn't allow us to actually check what the splash status was, and ioctl(KDGETMODE) isn't reliable;
-	# ideally, we'd only clear the screen if we were making the switch, but not if the user was already switched to the log output.
-	# Instead, clear if there's a "quiet", leave alone otherwise, and always restore;
-	# cmdline option "plymouth.ignore-show-splash" can be used to disable splashes altogether, if desired.
 	with_promptable_tty() {
 		if plymouth --ping 2>/dev/null; then
-			plymouth hide-splash
-			# shellcheck disable=SC2217
-			[ "${quiet:-n}" = "y" ] && printf '\033c' REDIREXIONS
-
-			"$@" REDIREXIONS; ret="$?"
-
-			plymouth show-splash
+			# shellcheck disable=SC2016
+			TZPFMS_PASSPHRASE_HELPER='exec plymouth ask-for-password --prompt="$1: "' "$@" 2>/run/tzpfms-err; ret="$?"
+			[ -s /run/tzpfms-err ] && plymouth display-message --text="$(cat /run/tzpfms-err)"
+		elif [ -e /run/systemd/system ] && command -v systemd-ask-password > /dev/null; then  # --no-tty matches zfs and actually works
+			# shellcheck disable=SC2016
+			TZPFMS_PASSPHRASE_HELPER='exec systemd-ask-password --no-tty --id="tzpfms:$2" "$1: "' "$@" 2>/run/tzpfms-err; ret="$?"
 		else
 			# Mimic /scripts/zfs#decrypt_fs(): setting "printk" temporarily to "7" will allow prompt even if kernel option "quiet"
 			read -r printk _ < /proc/sys/kernel/printk
 			[ "$printk" = "7" ] || echo 7 > /proc/sys/kernel/printk
 
-			"$@" REDIREXIONS; ret="$?"
+			TZPFMS_PASSPHRASE_HELPER="${TZPFMS_PASSPHRASE_HELPER:-}" "$@" REDIREXIONS; ret="$?"  # allow overriding in cmdline, but always set to raze default
 
 			[ "$printk" = "7" ] || echo "$printk" > /proc/sys/kernel/printk
 		fi
+		[ -s /run/tzpfms-err ] && cat /run/tzpfms-err >&2
+		[ -s /run/tzpfms-err ] && [ "$ret" -ne 0 ] && sed 's;^;'"$1"': ;' /run/tzpfms-err >> /dev/kmsg
+		rm -f /run/tzpfms-err
 		return "$ret"
 	}
 #endefine

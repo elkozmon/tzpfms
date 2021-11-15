@@ -36,7 +36,7 @@ int main(int argc, char ** argv) {
 		    uint8_t wrap_key[WRAPPING_KEY_LEN]{};
 		    TRY_MAIN(with_tpm1x_session([&](auto ctx, auto srk, auto srk_policy) {
 			    TSS_HOBJECT parent_key{};
-			    TRY_MAIN(try_policy_or_passphrase("load sealant key from blob (did you take ownership?)", "SRK", srk_policy, [&] {
+			    TRY_MAIN(try_policy_or_passphrase("load sealant key from blob (did you take ownership?)", "TPM1.X SRK", srk_policy, [&] {
 				    return Tspi_Context_LoadKeyByBlob(ctx, srk, handle.parent_key_blob_len, handle.parent_key_blob, &parent_key);
 			    }));
 			    quickscope_wrapper parent_key_deleter{[&] { Tspi_Key_UnloadKey(parent_key); }};
@@ -59,10 +59,12 @@ int main(int argc, char ** argv) {
 			    TRY_TPM1X("load sealed object from blob", Tspi_SetAttribData(sealed_object, TSS_TSPATTRIB_ENCDATA_BLOB, TSS_TSPATTRIB_ENCDATABLOB_BLOB,
 			                                                                 handle.sealed_object_blob_len, handle.sealed_object_blob));
 
+			    char what_for[ZFS_MAX_DATASET_NAME_LEN + 20 + 1];
+			    snprintf(what_for, sizeof(what_for), "%s TPM1.X wrapping key", zfs_get_name(dataset));
 
 			    uint8_t * loaded_wrap_key{};
 			    uint32_t loaded_wrap_key_len{};
-			    TRY_MAIN(try_policy_or_passphrase("unseal wrapping key", "wrapping key", parent_key_policy,
+			    TRY_MAIN(try_policy_or_passphrase("unseal wrapping key", what_for, parent_key_policy,
 			                                      [&] { return Tspi_Data_Unseal(sealed_object, parent_key, &loaded_wrap_key_len, &loaded_wrap_key); }));
 			    if(loaded_wrap_key_len != sizeof(wrap_key)) {
 				    fprintf(stderr, "Wrong sealed data length (%" PRIu32 " != %zu): ", loaded_wrap_key_len, sizeof(wrap_key));

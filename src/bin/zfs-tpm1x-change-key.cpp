@@ -60,9 +60,12 @@ int main(int argc, char ** argv) {
 			    }};
 
 			    {
+				    char what_for[ZFS_MAX_DATASET_NAME_LEN + 40 + 1];
+				    snprintf(what_for, sizeof(what_for), "%s TPM1.X wrapping key (or empty for none)", zfs_get_name(dataset));
+
 				    uint8_t * parent_key_passphrase{};
 				    size_t parent_key_passphrase_len{};
-				    TRY_MAIN(read_new_passphrase("wrapping key (or empty for none)", parent_key_passphrase, parent_key_passphrase_len));
+				    TRY_MAIN(read_new_passphrase(what_for, parent_key_passphrase, parent_key_passphrase_len));
 				    quickscope_wrapper parent_key_passphrase_deleter{[&] { free(parent_key_passphrase); }};
 
 				    if(parent_key_passphrase_len)

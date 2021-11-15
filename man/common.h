@@ -7,6 +7,8 @@ To all who support further development, in particular:
 ThePhD
 .It
 Embark Studios
+.It
+Jasper Bekkers
 .El
 .
 .Sh REPORTING BUGS

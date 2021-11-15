@@ -36,6 +36,8 @@ See
 .Xr zfs-tpm2-change-key 8
 for a detailed description.
 .
+#include "passphrase.h"
+.
 #include "backend-tpm2.h"
 .
 #include "common.h"

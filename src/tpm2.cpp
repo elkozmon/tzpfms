@@ -45,8 +45,8 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 	const auto now    = time(nullptr);
 	const auto now_tm = localtime(&now);
 	metadata.size     = snprintf((char *)metadata.buffer, sizeof(metadata.buffer), "%s %d-%02d-%02dT%02d:%02d:%02d %s", dataset_name,           //
-	                             now_tm->tm_year + 1900, now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_hour, now_tm->tm_min, now_tm->tm_sec,  //
-	                             TZPFMS_VERSION) +
+                           now_tm->tm_year + 1900, now_tm->tm_mon + 1, now_tm->tm_mday, now_tm->tm_hour, now_tm->tm_min, now_tm->tm_sec,  //
+                           TZPFMS_VERSION) +
 	                1;
 	metadata.size = metadata.size > sizeof(metadata.buffer) ? sizeof(metadata.buffer) : metadata.size;
 
@@ -102,8 +102,8 @@ static int tpm2_find_unused_persistent_non_platform(ESYS_CONTEXT * tpm2_ctx, TPM
 	return 0;
 }
 
-int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT & persistent_handle, const TPM2B_DATA & metadata, void * data,
-              size_t data_len) {
+int tpm2_seal(const char * dataset, ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT & persistent_handle, const TPM2B_DATA & metadata,
+              void * data, size_t data_len) {
 	ESYS_TR primary_handle = ESYS_TR_NONE;
 	quickscope_wrapper primary_handle_deleter{[&] { Esys_FlushContext(tpm2_ctx, primary_handle); }};
 
@@ -129,7 +129,7 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		TPM2B_CREATION_DATA * creation_data{};
 		TPM2B_DIGEST * creation_hash{};
 		TPMT_TK_CREATION * creation_ticket{};
-		TRY_MAIN(try_or_passphrase("create primary encryption key", "owner hierarchy", tpm2_ctx, TPM2_RC_BAD_AUTH, ESYS_TR_RH_OWNER, [&] {
+		TRY_MAIN(try_or_passphrase("create primary encryption key", "TPM2 owner hierarchy", tpm2_ctx, TPM2_RC_BAD_AUTH, ESYS_TR_RH_OWNER, [&] {
 			return Esys_CreatePrimary(tpm2_ctx, ESYS_TR_RH_OWNER, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &primary_sens, &pub, &metadata, &pcrs, &primary_handle,
 			                          &public_ret, &creation_data, &creation_hash, &creation_ticket);
 		}));
@@ -166,9 +166,13 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 		memcpy(secret_sens.sensitive.data.buffer, data, secret_sens.sensitive.data.size);
 
 		{
+			char what_for[ZFS_MAX_DATASET_NAME_LEN + 38 + 1];
+			snprintf(what_for, sizeof(what_for), "%s TPM2 wrapping key (or empty for none)", dataset);
+
 			uint8_t * passphrase{};
 			size_t passphrase_len{};
-			TRY_MAIN(read_new_passphrase("wrapping key (or empty for none)", passphrase, passphrase_len, sizeof(TPM2B_SENSITIVE_CREATE::sensitive.userAuth.buffer)));
+			TRY_MAIN(read_new_passphrase("%s TPM2 wrapping key (or empty for none)", passphrase, passphrase_len,
+			                             sizeof(TPM2B_SENSITIVE_CREATE::sensitive.userAuth.buffer)));
 			quickscope_wrapper passphrase_deleter{[&] { free(passphrase); }};
 
 			secret_sens.sensitive.userAuth.size = passphrase_len;
@@ -214,14 +218,17 @@ int tpm2_seal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT 
 	return 0;
 }
 
-int tpm2_unseal(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle, void * data, size_t data_len) {
+int tpm2_unseal(const char * dataset, ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_PERSISTENT persistent_handle, void * data, size_t data_len) {
+	char what_for[ZFS_MAX_DATASET_NAME_LEN + 18 + 1];
+	snprintf(what_for, sizeof(what_for), "%s TPM2 wrapping key", dataset);
+
 	// Entirely fake and not flushable (tpm:parameter(1):value is out of range or is not correct for the context)
 	ESYS_TR pandle;
 	TRY_TPM2("convert persistent handle to object", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
 
 	TPM2B_SENSITIVE_DATA * unsealed{};
 	quickscope_wrapper unsealed_deleter{[=] { Esys_Free(unsealed); }};
-	TRY_MAIN(try_or_passphrase("unseal wrapping key", "wrapping key", tpm2_ctx, TPM2_RC_AUTH_FAIL, pandle,
+	TRY_MAIN(try_or_passphrase("unseal wrapping key", what_for, tpm2_ctx, TPM2_RC_AUTH_FAIL, pandle,
 	                           [&] { return Esys_Unseal(tpm2_ctx, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, &unsealed); }));
 
 	if(unsealed->size != data_len)
@@ -236,7 +243,7 @@ int tpm2_free_persistent(ESYS_CONTEXT * tpm2_ctx, ESYS_TR tpm2_session, TPMI_DH_
 	TRY_TPM2("convert persistent handle to object", Esys_TR_FromTPMPublic(tpm2_ctx, persistent_handle, ESYS_TR_NONE, ESYS_TR_NONE, ESYS_TR_NONE, &pandle));
 
 	ESYS_TR new_handle;
-	TRY_MAIN(try_or_passphrase("unpersist object", "owner hierarchy", tpm2_ctx, TPM2_RC_BAD_AUTH, ESYS_TR_RH_OWNER,
+	TRY_MAIN(try_or_passphrase("unpersist object", "TPM2 owner hierarchy", tpm2_ctx, TPM2_RC_BAD_AUTH, ESYS_TR_RH_OWNER,
 	                           [&] { return Esys_EvictControl(tpm2_ctx, ESYS_TR_RH_OWNER, pandle, tpm2_session, ESYS_TR_NONE, ESYS_TR_NONE, 0, &new_handle); }));
 
 	return 0;
