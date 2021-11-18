@@ -107,19 +107,25 @@ static int get_key_material_helper(const char * helper, const char * whom, bool 
 					case 0:
 						struct stat sb;
 						fstat(outfd, &sb);
-						if(auto out = mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, outfd, 0); out != MAP_FAILED) {
+						if(!sb.st_size)  // unmmappable
+							return buf = nullptr, len_out = 0, 0;
+						else if(auto out = static_cast<uint8_t *>(mmap(nullptr, sb.st_size, PROT_READ, MAP_PRIVATE | MAP_POPULATE, outfd, 0)); out != MAP_FAILED) {
 							quickscope_wrapper out_deleter{[=] { munmap(out, sb.st_size); }};
-							buf     = static_cast<uint8_t *>(malloc(sb.st_size));  // TODO:if failed
 							len_out = sb.st_size;
-							memcpy(buf, out, sb.st_size);
-							// Trim ending newline, if any
-							if(buf[len_out - 1] == '\n')
-								buf[--len_out] = '\0';
+							if(out[len_out - 1] == '\n')  // Trim ending newline, if any
+								--len_out;
+							if(!len_out)
+								buf = nullptr;
+							else {
+								if(!(buf = static_cast<uint8_t *>(malloc(len_out))))
+									len_out = 0, (void)TRY("allocate passphrase", -1);
+								memcpy(buf, out, len_out);
+							}
 							return 0;
 						} else
-							;  // error
+							TRY("read back passphrase", -1);
 
-					case 127:  // enoent, error already written by shell or child
+					case 127:  // ENOENT, error already written by shell or child
 						return -1;
 
 					default:
@@ -215,8 +221,8 @@ static int get_key_material_raw(const char * whom, bool again, bool newkey, uint
 static int get_key_material_dispatch(const char * whom, bool again, bool newkey, uint8_t *& buf, size_t & len_out) {
 	static const char * helper{};
 	if(!helper)
-		helper = getenv("TZPFMS_PASSPHRASE_HELPER");
-	if(helper && *helper) {
+		helper = getenv("TZPFMS_PASSPHRASE_HELPER") ?: "";
+	if(*helper) {
 		if(auto err = get_key_material_helper(helper, whom, again, newkey, buf, len_out); err != -1)
 			return err;
 		else

@@ -11,7 +11,7 @@
 			[ -s /run/tzpfms-err ] && plymouth display-message --text="$(cat /run/tzpfms-err)"
 		elif [ -e /run/systemd/system ] && command -v systemd-ask-password > /dev/null; then  # --no-tty matches zfs and actually works
 			# shellcheck disable=SC2016
-			TZPFMS_PASSPHRASE_HELPER='exec systemd-ask-password --no-tty --id="tzpfms:$2" "$1: "' "$@" 2>/run/tzpfms-err; ret="$?"
+			TZPFMS_PASSPHRASE_HELPER='exec systemd-ask-password --no-tty --id="tzpfms:$2" "$1:"' "$@" 2>/run/tzpfms-err; ret="$?"
 		else
 			# Mimic /scripts/zfs#decrypt_fs(): setting "printk" temporarily to "7" will allow prompt even if kernel option "quiet"
 			read -r printk _ < /proc/sys/kernel/printk
