@@ -29,4 +29,6 @@ If the helper doesn't exist
 .Pq the shell exits with Sy 127 ,
 a diagnostic is issued and the normal prompt is used as fall-back.
 If it fails for any other reason, the prompting is aborted.
+.
+TZPFMS_PASSPHRASE_HELPER_MAN{}
 .El

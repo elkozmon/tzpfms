@@ -218,10 +218,17 @@ static int get_key_material_raw(const char * whom, bool again, bool newkey, uint
 	return 0;
 }
 
+#ifndef TZPFMS_PASSPHRASE_HELPER
+#define TZPFMS_PASSPHRASE_HELPER
+#endif
+#define STRINGIFY_(...) #__VA_ARGS__
+#define STRINGIFY(...) STRINGIFY_(__VA_ARGS__)
+
 static int get_key_material_dispatch(const char * whom, bool again, bool newkey, uint8_t *& buf, size_t & len_out) {
 	static const char * helper{};
+	printf("'%s'\n", STRINGIFY(TZPFMS_PASSPHRASE_HELPER));
 	if(!helper)
-		helper = getenv("TZPFMS_PASSPHRASE_HELPER") ?: "";
+		helper = getenv("TZPFMS_PASSPHRASE_HELPER") ?: STRINGIFY(TZPFMS_PASSPHRASE_HELPER);
 	if(*helper) {
 		if(auto err = get_key_material_helper(helper, whom, again, newkey, buf, len_out); err != -1)
 			return err;

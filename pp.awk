@@ -10,6 +10,13 @@ BEGIN {
 	dir = ARGV[1]
 	sub(/[^\/]+$/, "", dir)
 
+	for (i = 2; i < ARGC; ++i) {
+		eq = index(ARGV[i], "=")
+		v = substr(ARGV[i], eq + 1)
+		gsub(/\\n/, "\n", v)
+		macro_contents[substr(ARGV[i], 1, eq - 1)] = v
+	}
+
 	incfile = ""
 }
 

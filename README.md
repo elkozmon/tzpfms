@@ -28,6 +28,11 @@ The output binaries are trimmed of extraneous dependencies, so they're all just 
 
 `mandoc` is required for HTML manuals. Set `MANDOC=true` to forgo this.
 
+The default `$TZPFMS_PASSPHRASE_HELPER` is the null string.
+To set a different default, set `TZPFMS_PASSPHRASE_HELPER` and `TZPFMS_PASSPHRASE_HELPER_MAN` for `make` — `$`s need to be double-escaped and `'`s need to be full-`'` escaped (i.e. `'\''`).
+
+As an example, for a sensible default value of `exec systemd-ask-password --id="tzpfms:$2" "$1:"` for OOB systemd integration, pass `TZPFMS_PASSPHRASE_HELPER='exec systemd-ask-password --id="tzpfms:$$2" "$$1"'` and `TZPFMS_PASSPHRASE_HELPER_MAN='Ic exec Nm systemd-ask-password Fl -id Ns Li = Ns Qo Li tzpfms:\& Ns Ar $$2 Qc Qo Ar $$1 Ns Li ":\&" Qc'`.
+
 ### Installation
 
 Copy the `out/zfs-tpm*` binaries corresponding to the back-ends you want to `/sbin`,
