@@ -28,7 +28,7 @@ OS_LD_LIBS :=
 CXXVER := $(shell $(CXX) --version)
 ifneq "$(findstring clang,$(CXXVER))" ""
 	# GCC doesn't have this granularity
-	CXXSPECIFIC := -flto=full -pedantic -Wno-gnu-statement-expression -Wno-gnu-include-next
+	CXXSPECIFIC := -flto=full -pedantic -Wno-gnu-statement-expression -Wno-gnu-include-next -Wno-gnu-conditional-omitted-operand
 else
 	CXXSPECIFIC := -flto
 endif
