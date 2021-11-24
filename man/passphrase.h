@@ -3,26 +3,28 @@
 .Sh ENVIRONMENT VARIABLES
 .Bl -tag -compact -width "TZPFMS"
 .It Ev TZPFMS_PASSPHRASE_HELPER
-If set and nonempty, will be run via
+By default, passphrases are prompted for and read in on the standard output and input streams.
+If
+.Ev TZPFMS_PASSPHRASE_HELPER
+is set and nonempty, it will be run via
 .Pa /bin/ Ns Nm sh Fl c
-to provide a passphrase, instead of reading from the standard input stream.
+to provide each passphrase, instead.
 .Pp
 The standard output stream of the helper is tied to an anonymous file and used in its entirety as the passphrase, except for a trailing new-line, if any.
 The arguments are:
 .Bl -tag -compact -offset "@@" -width "@@"
 .It Li $1
-Pre-formatted noun phrase with all the information below, like
-.Qq Passphrase for tarta-zoot
-or
-.Qq New passphrase for tarta-zoot (again)
+Pre-formatted noun phrase with all the information below, for use as a prompt
+.\" Passphrase for tarta-zoot
+.\" New passphrase for tarta-zoot (again)
 .It Li $2
-Either the dataset name or the element of the TPM hierarchy
+Either the dataset name or the element of the TPM hierarchy being prompted for
 .It Li $3
 .Qq new
-if this is for a new passphrase
+if this is for a new passphrase, otherwise blank
 .It Li $4
 .Qq again
-if it's the second prompt for that passphrase
+if it's the second prompt for that passphrase, otherwise blank
 .El
 .Pp
 If the helper doesn't exist

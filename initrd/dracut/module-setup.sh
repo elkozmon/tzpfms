@@ -34,6 +34,7 @@ _install_tpm1x() {
 check() {
 	command -v zfs-tpm-list > /dev/null || return 1
 
+  # shellcheck disable=SC2154
   if [ -n "$hostonly" ]; then
 		_get_backend || return
 
@@ -60,7 +61,7 @@ installkernel() {
 install() {
 	inst_binary zfs-tpm-list
 
-	if [ -n "${hostonly}" ]; then
+	if [ -n "$hostonly" ]; then
 		_get_backend
 
 		[ "$backend" = "TPM2"   ] && _install_tpm2
