@@ -45,8 +45,7 @@ the user is always prompted for an optional passphrase to protect the sealed obj
 .Pp
 The following properties are set on
 .Ar dataset :
-.Bl -bullet -compact -offset 4n -width ""
-.\"" TODO: width?
+.Bl -bullet -compact -offset 4n -width "@"
 .It
 .Li xyz.nabijaczleweli:tzpfms.backend Ns = Ns Sy TPM2
 .It

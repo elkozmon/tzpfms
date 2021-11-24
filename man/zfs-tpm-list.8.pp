@@ -85,31 +85,31 @@ List only encryption roots whose keys are unavailable.
 .Sh EXAMPLES
 .Bd -literal -compact
 .Li $ Nm
-NAME      BACK-END  KEYSTATUS    COHERENT
-owo/venc  TPM2      unavailable  yes
-owo/enc   TPM1.X    available    yes
+NAME             BACK-END  KEYSTATUS    COHERENT
+tarta-zoot       TPM1.X    available    yes
+tarta-zoot/home  TPM2      unavailable  yes
 
 .Li $ Nm Fl ad0
-NAME  BACK-END  KEYSTATUS  COHERENT
-awa   -         available  yes
+NAME     BACK-END  KEYSTATUS  COHERENT
+filling  -         available  yes
 
 .Li $ Nm Fl b Sy TPM2
-NAME      BACK-END  KEYSTATUS    COHERENT
-owo/venc  TPM2      unavailable  yes
+NAME             BACK-END  KEYSTATUS    COHERENT
+tarta-zoot/home  TPM2      unavailable  yes
 
-.Li $ Nm Fl ra Ar owo
-NAME      BACK-END  KEYSTATUS    COHERENT
-owo/venc  TPM2      unavailable  yes
-owo/vtnc  -         available    yes
-owo/v nc  -         available    yes
-owo/enc   TPM1.X    available    yes
+.Li $ Nm Fl ra Ar tarta-zoot
+NAME             BACK-END  KEYSTATUS    COHERENT
+tarta-zoot       TPM1.X    available    yes
+tarta-zoot/home  TPM2      unavailable  yes
+tarta-zoot/bkp   -         available    yes
+tarta-zoot/vm    -         available    yes
 
 .Li $ Nm Fl al
-NAME      BACK-END  KEYSTATUS  COHERENT
-awa       -         available  yes
-owo/vtnc  -         available  yes
-owo/v nc  -         available  yes
-owo/enc   TPM1.X    available  yes
+NAME             BACK-END  KEYSTATUS  COHERENT
+filling          -         available  yes
+tarta-zoot       TPM1.X    available  yes
+tarta-zoot/bkp   -         available  yes
+tarta-zoot/vm    -         available  yes
 .Ed
 .
 #include "common.h"
