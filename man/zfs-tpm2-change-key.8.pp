@@ -105,5 +105,3 @@ In case of a catastrophic event, the key can be loaded by running
 .
 .Sh SEE ALSO
 .Xr tpm2_unseal 1
-.Pp
-.Lk https:/\&/git.sr.ht/~nabijaczleweli/tzpfms

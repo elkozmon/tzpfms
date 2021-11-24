@@ -43,6 +43,3 @@ option.
 #include "backend-tpm1x.h"
 .
 #include "common.h"
-.
-.Sh SEE ALSO
-.Lk https:/\&/git.sr.ht/~nabijaczleweli/tzpfms

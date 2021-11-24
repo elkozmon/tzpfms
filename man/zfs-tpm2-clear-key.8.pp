@@ -41,6 +41,3 @@ for a detailed description.
 #include "backend-tpm2.h"
 .
 #include "common.h"
-.
-.Sh SEE ALSO
-.Lk https:/\&/git.sr.ht/~nabijaczleweli/tzpfms

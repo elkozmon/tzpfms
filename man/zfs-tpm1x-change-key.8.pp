@@ -105,6 +105,3 @@ In case of a catastrophic event, the key can be loaded by running
 #include "backend-tpm1x.h"
 .
 #include "common.h"
-.
-.Sh SEE ALSO
-.Lk https:/\&/git.sr.ht/~nabijaczleweli/tzpfms

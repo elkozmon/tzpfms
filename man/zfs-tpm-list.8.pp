@@ -113,6 +113,3 @@ tarta-zoot/vm    -         available  yes
 .Ed
 .
 #include "common.h"
-.
-.Sh SEE ALSO
-.Lk https:/\&/git.sr.ht/~nabijaczleweli/tzpfms
