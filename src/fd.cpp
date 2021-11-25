@@ -226,7 +226,6 @@ static int get_key_material_raw(const char * whom, bool again, bool newkey, uint
 
 static int get_key_material_dispatch(const char * whom, bool again, bool newkey, uint8_t *& buf, size_t & len_out) {
 	static const char * helper{};
-	printf("'%s'\n", STRINGIFY(TZPFMS_PASSPHRASE_HELPER));
 	if(!helper)
 		helper = getenv("TZPFMS_PASSPHRASE_HELPER") ?: STRINGIFY(TZPFMS_PASSPHRASE_HELPER);
 	if(*helper) {

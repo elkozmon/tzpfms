@@ -31,7 +31,7 @@ The output binaries are trimmed of extraneous dependencies, so they're all just 
 The default `$TZPFMS_PASSPHRASE_HELPER` is the null string.
 To set a different default, set `TZPFMS_PASSPHRASE_HELPER` and `TZPFMS_PASSPHRASE_HELPER_MAN` for `make` — `$`s need to be double-escaped and `'`s need to be full-`'` escaped (i.e. `'\''`).
 
-As an example, for a sensible default value of `exec systemd-ask-password --id="tzpfms:$2" "$1:"` for OOB systemd integration, pass `TZPFMS_PASSPHRASE_HELPER='exec systemd-ask-password --id="tzpfms:$$2" "$$1"'` and `TZPFMS_PASSPHRASE_HELPER_MAN='Ic exec Nm systemd-ask-password Fl -id Ns Li = Ns Qo Li tzpfms:\& Ns Ar $$2 Qc Qo Ar $$1 Ns Li ":\&" Qc'`.
+As an example, for a sensible default value of `exec systemd-ask-password --id="tzpfms:$2" "$1:"` for OOB systemd integration, pass `TZPFMS_PASSPHRASE_HELPER='exec systemd-ask-password --id="tzpfms:$$2" "$$1:"'` and `TZPFMS_PASSPHRASE_HELPER_MAN='Ic exec Nm systemd-ask-password Fl -id Ns Li = Ns Qo Li tzpfms:\& Ns Ar $$2 Qc Qo Ar $$1 Ns Li ":\&" Qc'`.
 
 ### Installation
 
@@ -80,7 +80,7 @@ ln -s /usr/lib/i386-linux-gnu/libtss2-tcti-{swtpm,default}.so
 #### TPM1.x
 
 Build [`swtpm`](//github.com/stefanberger/swtpm), then prepare and run it and
-([hopefully](https://github.com/stefanberger/swtpm/issues/5#issuecomment-210607890)) [TrouSerS](//sourceforge.net/projects/trousers), as `root`/`tpm`:
+([hopefully](//github.com/stefanberger/swtpm/issues/5#issuecomment-210607890)) [TrouSerS](//sourceforge.net/projects/trousers), as `root`/`tpm`:
 ```sh
 swtpm_setup --tpmstate tpm1x-state --createek --display --logfile /dev/stdout --overwrite
 swtpm cuse -n tpm --tpmstate dir=tpm1x-state --seccomp action=none --log level=10,file=/dev/fd/4 4>&1
@@ -114,7 +114,7 @@ There's [the tracker](//todo.sr.ht/~nabijaczleweli/tzpfms), but also see the lis
 ## Contributing
 
 Send a patch inline, as an attachment, or a git link and a ref to pull from to
-[the list](//lists.sr.ht/~nabijaczleweli/tzpfms) ([~nabijaczleweli/tzpfms@lists.sr.ht](mailto:~nabijaczleweli/tzpfms)) or [me](mailto:nabijaczleweli@nabijaczleweli.xyz)
+[the list](//lists.sr.ht/~nabijaczleweli/tzpfms) ([~nabijaczleweli/tzpfms@lists.sr.ht](mailto:~nabijaczleweli/tzpfms@lists.sr.ht)) or [me](mailto:nabijaczleweli@nabijaczleweli.xyz)
 directly. I'm not picky, just please include the repo name in the subject prefix.
 
 ## Discussion

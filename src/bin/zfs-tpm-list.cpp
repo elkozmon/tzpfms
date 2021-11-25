@@ -57,8 +57,8 @@ int main(int argc, char ** argv) {
 				    maxdepth = SIZE_MAX;
 				    break;
 			    case 'd':
-				    if(parse_int(optarg, maxdepth))
-					    return fprintf(stderr, "%s is not an integer\n", optarg), __LINE__;
+				    if(!parse_uint(optarg, maxdepth))
+					    return fprintf(stderr, "-d %s: %s\n", optarg, strerror(errno)), __LINE__;
 				    break;
 			    case 'a':
 				    print_nontzpfms = true;

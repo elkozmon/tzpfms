@@ -40,9 +40,10 @@ int main(int argc, char ** argv) {
 		    return with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
 			    TRY_MAIN(verify_backend(dataset, THIS_BACKEND, [&](auto previous_handle_s) {
 				    TPMI_DH_PERSISTENT previous_handle{};
-				    if(parse_int(previous_handle_s, previous_handle))
-					    fprintf(stderr, "Couldn't parse previous persistent handle for dataset %s. You might need to run \"tpm2_evictcontrol -c %s\" or equivalent!\n",
-					            zfs_get_name(dataset), previous_handle_s);
+				    if(!parse_uint(previous_handle_s, previous_handle))
+					    fprintf(stderr,
+					            "Couldn't parse previous persistent handle for dataset %s: %s. You might need to run \"tpm2_evictcontrol -c %s\" or equivalent!\n",
+					            zfs_get_name(dataset), strerror(errno), previous_handle_s);
 				    else {
 					    if(tpm2_free_persistent(tpm2_ctx, tpm2_session, previous_handle))
 						    fprintf(stderr,

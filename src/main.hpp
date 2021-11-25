@@ -29,8 +29,9 @@ int do_bare_main(int argc, char ** argv, const char * getoptions, const char * u
 #if __GLIBC__
 	setenv("POSIXLY_CORRECT", "1", true);
 #endif
-	auto gopts = reinterpret_cast<char *>(TRY_PTR("allocate options string", alloca(strlen(getoptions) + 2 + 1)));
-	snprintf(gopts, strlen(getoptions) + 2 + 1, "%shV", getoptions);
+	auto gopts = reinterpret_cast<char *>(alloca(strlen(getoptions) + 2 + 1));
+	gopts[0] = 'h', gopts[1] = 'V';
+	strcpy(gopts + 2, getoptions);
 	for(int opt; (opt = getopt(argc, argv, gopts)) != -1;)
 		switch(opt) {
 			case '?':

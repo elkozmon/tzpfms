@@ -52,8 +52,8 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 
 
 int tpm2_parse_handle(const char * dataset_name, const char * handle_s, TPMI_DH_PERSISTENT & handle) {
-	if(parse_int(handle_s, handle))
-		return fprintf(stderr, "Dataset %s's handle %s not valid.\n", dataset_name, handle_s), __LINE__;
+	if(!parse_uint(handle_s, handle))
+		return fprintf(stderr, "Dataset %s's handle %s: %s.\n", dataset_name, handle_s, strerror(errno)), __LINE__;
 
 	return 0;
 }

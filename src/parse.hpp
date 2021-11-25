@@ -5,20 +5,29 @@
 
 
 #include <charconv>
+#include <limits>
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 
 
 template <class T>
-int parse_int(const char * what, T & out) {
-	int base = 10;
-	if(!strncmp(what, "0x", 2) || !strncmp(what, "0X", 2)) {
-		base = 16;
-		what += 2;
-	}
+bool parse_uint(const char * val, T & out) {
+	if(val[0] == '\0')
+		return errno = EINVAL, false;
+	if(val[0] == '-')
+		return errno = ERANGE, false;
 
-	if(std::from_chars(what, what + strlen(what), out, base).ptr == what)
-		return __LINE__;
-	else
-		return 0;
+	char * end{};
+	errno    = 0;
+	auto res = strtoull(val, &end, 0);
+	out      = res;
+	if(errno)
+		return false;
+	if(res > std::numeric_limits<T>::max())
+		return errno = ERANGE, false;
+	if(*end != '\0')
+		return errno = EINVAL, false;
+
+	return true;
 }
