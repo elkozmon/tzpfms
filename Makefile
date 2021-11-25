@@ -93,8 +93,7 @@ $(OUTDIR)man/style.css : man/style.css
 
 $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXAR) -o$@ $^ $(PIC) -Wl,--as-needed $(LDAR)
-	$(STRIP) $(STRIPAR) $@
+	$(CXX) $(CXXAR) -o$@ $^ -Wl,--as-needed $(LDAR)
 
 $(OBJDIR)%$(OBJ) : $(SRCDIR)%.cpp
 	@mkdir -p $(dir $@)
