@@ -17,7 +17,7 @@ sed -Ei 's/^decrypt_fs\(\)/__tzpfms__&/' "$DESTDIR/scripts/zfs"
 cat /usr/share/tzpfms/initramfs-tools-zfs-patch.sh >> "$DESTDIR/scripts/zfs"
 
 
-for x in zfs-tpm-list zfs-tpm2-load-key zfs-tpm1x-load-key tpm_resetdalock tcsd $(find /usr/lib -name 'libtss2-tcti*.so*'); do  # TODO: there's got to be a better way™!
+for x in zfs-tpm-list zfs-tpm2-load-key tpm2_dictionarylockout zfs-tpm1x-load-key tpm_resetdalock tcsd $(find /usr/lib -name 'libtss2-tcti*.so*'); do  # TODO: there's got to be a better way™!
 	xloc="$(command -v "$x")" && copy_exec "$xloc"
 done
 

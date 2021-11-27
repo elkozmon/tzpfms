@@ -22,6 +22,7 @@ _install_tpm2() {
 	inst_binary zfs-tpm2-load-key
   # shellcheck disable=SC2046
 	inst_library $(find /usr/lib -name 'libtss2-tcti*.so*')  # TODO: there's got to be a better way™!
+	command -v tpm2_dictionarylockout > /dev/null && inst_binary tpm2_dictionarylockout
 }
 
 _install_tpm1x() {
