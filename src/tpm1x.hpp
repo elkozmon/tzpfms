@@ -102,3 +102,6 @@ extern int tpm1x_parse_handle(const char * dataset_name, char * handle_s, tpm1x_
 
 /// Create sealed object, assign a policy and a known secret to it.
 extern int tpm1x_prep_sealed_object(TSS_HCONTEXT ctx, TSS_HOBJECT & sealed_object, TSS_HPOLICY & sealed_object_policy);
+
+/// Parse a comma- or space-separated number list.
+extern int tpm1x_parse_pcrs(char * arg, uint32_t *& pcrs, size_t & pcrs_len);

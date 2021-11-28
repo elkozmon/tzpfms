@@ -25,12 +25,13 @@ int main(int argc, char ** argv) {
 		    TRY_MAIN(parse_key_props(dataset, THIS_BACKEND, handle_s));
 
 		    TPMI_DH_PERSISTENT handle{};
-		    TRY_MAIN(tpm2_parse_handle(zfs_get_name(dataset), handle_s, handle));
+		    TPML_PCR_SELECTION pcrs{};
+		    TRY_MAIN(tpm2_parse_prop(zfs_get_name(dataset), handle_s, handle, &pcrs));
 
 
 		    uint8_t wrap_key[WRAPPING_KEY_LEN];
 		    TRY_MAIN(with_tpm2_session([&](auto tpm2_ctx, auto tpm2_session) {
-			    TRY_MAIN(tpm2_unseal(zfs_get_name(dataset), tpm2_ctx, tpm2_session, handle, wrap_key, sizeof(wrap_key)));
+			    TRY_MAIN(tpm2_unseal(zfs_get_name(dataset), tpm2_ctx, tpm2_session, handle, pcrs, wrap_key, sizeof(wrap_key)));
 			    return 0;
 		    }));
 

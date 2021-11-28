@@ -31,5 +31,6 @@ and the documentation at
 .Lk https:/\&/tpm2-tss.readthedocs.io .
 .Pp
 The TPM 2.0 specifications, mainly at
-.Lk https:/\&/trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-1-Architecture-01.38.pdf
+.Lk https:/\&/trustedcomputinggroup.org/resource/tpm-library-specification/ ,
+.Lk https:/\&/trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-1-Architecture-01.38.pdf ,
 and related pages.

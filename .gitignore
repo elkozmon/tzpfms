@@ -14,7 +14,7 @@
 !src/**
 !man
 !man/**
-!ext
-!ext/**
+!contrib
+!contrib/**
 !initrd
 !initrd/**

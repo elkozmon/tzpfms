@@ -8,6 +8,7 @@ packages:
   - pkg-config
   - libtss2-dev
   - libtspi-dev
+  - libssl-dev
   - mandoc
   - shellcheck
   - curl

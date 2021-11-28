@@ -27,6 +27,11 @@
 		},
 		{
 			"follow_symlinks": true,
+			"name": "Misc source",
+			"path": "contrib"
+		},
+		{
+			"follow_symlinks": true,
 			"name": "Initrd plug-ins",
 			"path": "initrd"
 		},

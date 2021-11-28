@@ -4,7 +4,9 @@
 #include "tpm1x.hpp"
 
 #include "main.hpp"
+#include "parse.hpp"
 
+#include <algorithm>
 #include <stdlib.h>
 
 
@@ -77,6 +79,39 @@ int tpm1x_prep_sealed_object(TSS_HCONTEXT ctx, TSS_HOBJECT & sealed_object, TSS_
 	          Tspi_Policy_SetSecret(sealed_object_policy, TSS_SECRET_MODE_SHA1, sizeof(sealing_secret), (uint8_t *)sealing_secret));
 
 	ok = true;
+	return 0;
+}
+
+/// https://trustedcomputinggroup.org/wp-content/uploads/TPM-Main-Part-1-Design-Principles_v1.2_rev116_01032011.pdf sections 4.4.7, .8 (L1228-1236):
+/// > 7. A TPM implementation MUST provide 16 or more independent PCRs. These PCRs areidentified by index and MUST be numbered from 0 (that is, PCR0 through
+/// >    PCR15 are required for TCG compliance). Vendors MAY implement more registers for general-purpose use. Extra registers MUST be numbered contiguously
+/// >    from16 up to max – 1,where max is the maximum offered by the TPM
+/// > 8. The TCG-protected capabilities that expose and modify the PCRs use a 32-bit index,indicating the maximum usable PCR index. However, TCG reserves
+/// >    register indices 230and higher for later versions of the specification. A TPM implementation MUST NOTprovide registers with indices greater than or
+/// >    equal to 230.
+int tpm1x_parse_pcrs(char * arg, uint32_t *& pcrs, size_t & pcrs_len) {
+	size_t out_cap = 16;
+	pcrs           = reinterpret_cast<uint32_t *>(TRY_PTR("allocate PCR list", calloc(out_cap, sizeof(uint32_t))));
+
+	char * sv{};
+	for(arg = strtok_r(arg, ", ", &sv); arg; arg = strtok_r(nullptr, ", ", &sv)) {
+		uint32_t pcr;
+		if(!parse_uint(arg, pcr))
+			return fprintf(stderr, "PCR %s: %s\n", arg, strerror(errno)), __LINE__;
+		if(pcr >= 230)
+			return fprintf(stderr, "PCR %s: too large (max 229).\n", arg), __LINE__;
+
+		auto idx = std::upper_bound(pcrs, pcrs + pcrs_len, pcr) - pcrs;
+		if(!idx || pcrs[idx - 1] != pcr) {
+			if(pcrs_len >= out_cap)
+				pcrs = reinterpret_cast<uint32_t *>(TRY_PTR("allocate PCR list", reallocarray(pcrs, out_cap *= 2, sizeof(uint32_t))));
+
+			memmove(pcrs + idx + 1, pcrs + idx, (pcrs_len - idx) * sizeof(uint32_t));
+			pcrs[idx] = pcr;
+			++pcrs_len;
+		}
+	}
+
 	return 0;
 }
 

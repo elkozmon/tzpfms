@@ -18,13 +18,16 @@ Essentially BitLocker, but for ZFS –
 a random raw key is generated and sealed to the TPM (both 2 and 1.x supported) with an additional optional password in front of it,
 tying the dataset to the platform and an additional optional secret (or to the posession of the back-up).
 
+Additionally, 1.x TPMs support PCR binding with and without passwords.
+2 TPMs support PCR binding without a password and PCR binding *OR* a password – both may be set, and any can be used to unseal (exclusive by default to prevent foot-guns).
+
 Both dracut (with/without Plymouth) (with/without hostonly) (only on systemd systems, I don't have a test-bed for the non-systemd path)
 and initramfs-tools (with/without Plymouth) are supported for [ZFS-on-root](https://nabijaczleweli.xyz/content/blogn_t/005-low-curse-zfs-on-root.html) set-ups.
 
 ### Building
 
-You'll need `pkg-config`, `shellcheck`, `libzfslinux-dev` (0.8.x and 2.[01].x work), `libtss2-dev`, `libtspi-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
-The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + the chosen TPM back-end, if any.
+You'll need `pkg-config`, `shellcheck`, `libzfslinux-dev` (0.8.x and 2.[01].x work), `libtss2-dev`, `libtspi-dev`, `libssl-dev`, and `make` should hopefully Just Work™ if you have a C++17-capable compiler.
+The output binaries are trimmed of extraneous dependencies, so they're all just libc + libzfs and friends + the chosen TPM back-end, if any + libcrypto for TPM2 PCR handling.
 
 `mandoc` is required for HTML manuals. Set `MANDOC=true` to forgo this.
 
@@ -69,7 +72,7 @@ See the [repository README](//debian.nabijaczleweli.xyz/README) for more informa
 
 Build [`swtpm`](//github.com/stefanberger/swtpm), then prepare and run it:
 ```sh
-swtpm_setup --tpmstate tpm2-state --tpm2 --createek --display --logfile /dev/stdout --overwrite
+swtpm_setup --tpmstate tpm2-state --tpm2 --createek --display --logfile /dev/tty --overwrite
 swtpm socket --server type=tcp,port=2321 --ctrl type=tcp,port=2322 --tpm2 --tpmstate dir=tpm2-state --flags not-need-init --log level=10
 ```
 
@@ -82,7 +85,7 @@ ln -s /usr/lib/i386-linux-gnu/libtss2-tcti-{swtpm,default}.so
 Build [`swtpm`](//github.com/stefanberger/swtpm), then prepare and run it and
 ([hopefully](//github.com/stefanberger/swtpm/issues/5#issuecomment-210607890)) [TrouSerS](//sourceforge.net/projects/trousers), as `root`/`tpm`:
 ```sh
-swtpm_setup --tpmstate tpm1x-state --createek --display --logfile /dev/stdout --overwrite
+swtpm_setup --tpmstate tpm1x-state --createek --display --logfile /dev/tty --overwrite
 swtpm cuse -n tpm --tpmstate dir=tpm1x-state --seccomp action=none --log level=10,file=/dev/fd/4 4>&1
 swtpm_ioctl -i /dev/tpm
 TPM_DEVICE=/dev/tpm swtpm_bios

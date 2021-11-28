@@ -10,6 +10,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl b Ar backup-file
+.Op Fl P Ar PCR Ns Oo Ns Cm \&, Ns Ar PCR Oc Ns …
 .Ar dataset
 .
 .Sh DESCRIPTION
@@ -62,7 +63,7 @@ tools
 .Li tzpfms.key
 is a colon-separated pair of hexadecimal-string (i.e. "4F7730" for "Ow0") blobs;
 the first one represents the RSA key protecting the blob,
-and it is protected with either the password, if provided, or the SHA1 constant
+and it is protected with either the passphrase, if provided, or the SHA1 constant
 .Li CE4CF677875B5EB8993591D5A9AF1ED24A3A8736 ;
 the second represents the sealed object containing the wrapping key,
 and is protected with the SHA1 constant
@@ -79,13 +80,13 @@ or to issue a note for manual intervention into the standard error stream.
 A final verification should be made by running
 .Nm zfs-tpm1x-load-key Fl n Ar dataset .
 If that command succeeds, all is well,
-but otherwise the dataset can be manually rolled back to a password with
+but otherwise the dataset can be manually rolled back to a passphrase with
 .Nm zfs-tpm1x-clear-key Ar dataset
 .Pq or, if that fails to work, Nm zfs Cm change-key Fl o Li keyformat=passphrase Ar dataset ,
 and you are hereby asked to report a bug, please.
 .Pp
 .Nm zfs-tpm1x-clear-key Ar dataset
-can be used to clear the properties and go back to using a password.
+can be used to clear the properties and go back to using a passphrase.
 .
 .Sh OPTIONS
 .Bl -tag -compact -width "-b backup-file"
@@ -98,6 +99,15 @@ This back-up
 be stored securely, off-site.
 In case of a catastrophic event, the key can be loaded by running
 .Dl Nm zfs Cm load-key Ar dataset Li < Ar backup-file
+.Pp
+.
+.It Fl P Ar PCR Ns Oo Ns Cm \&, Ns Ar PCR Oc Ns …
+Bind the key to space- or comma-separated
+.Ar PCR Ns s
+\(em if they change, the wrapping key will not be able to be unsealed.
+The minimum amount of PCRs for a PC TPM is
+.Sy 24 Pq numbered Sy 0 Ns .. Ns Sy 23 .
+For most, this is also the maximum.
 .El
 .
 #include "passphrase.h"
@@ -105,3 +115,11 @@ In case of a catastrophic event, the key can be loaded by running
 #include "backend-tpm1x.h"
 .
 #include "common.h"
+.
+.Sh SEE ALSO
+.\" Match this to zfs-tpm2-change-key.8:
+PCR allocations:
+.Lk https:/\&/wiki.archlinux.org/title/Trusted_Platform_Module#Accessing_PCR_registers
+and
+.Lk https:/\&/trustedcomputinggroup.org/wp-content/uploads/PC-ClientSpecific_Platform_Profile_for_TPM_2p0_Systems_v51.pdf ,
+Section 2.3.4 "PCR Usage", Table 1.

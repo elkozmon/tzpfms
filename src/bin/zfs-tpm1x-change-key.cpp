@@ -5,6 +5,7 @@
 // #include <sys/zio_crypt.h>
 #define WRAPPING_KEY_LEN 32
 
+#include <algorithm>
 #include <stdio.h>
 
 #include "../fd.hpp"
@@ -23,8 +24,20 @@
 
 int main(int argc, char ** argv) {
 	const char * backup{};
+	uint32_t * pcrs{};
+	size_t pcrs_len{};
 	return do_main(
-	    argc, argv, "b:", "[-b backup-file]", [&](auto) { backup = optarg; },
+	    argc, argv, "b:P:", "[-b backup-file] [-P PCR[,PCR]…]",
+	    [&](auto o) {
+		    switch(o) {
+			    case 'b':
+				    return backup = optarg, 0;
+			    case 'P':
+				    return tpm1x_parse_pcrs(optarg, pcrs, pcrs_len);
+			    default:
+				    __builtin_unreachable();
+		    }
+	    },
 	    [&](auto dataset) {
 		    REQUIRE_KEY_LOADED(dataset);
 
@@ -35,6 +48,36 @@ int main(int argc, char ** argv) {
 		    return with_tpm1x_session([&](auto ctx, auto srk, auto srk_policy) {
 			    TSS_HTPM tpm_h{};
 			    TRY_TPM1X("extract TPM from context", Tspi_Context_GetTpmObject(ctx, &tpm_h));
+
+
+			    /// Do it early because it's a cmdline argument and to not ask for password if it fails
+			    TSS_HOBJECT bound_pcrs{};
+			    quickscope_wrapper bound_pcrs_deleter{[&] {
+				    if(bound_pcrs)
+					    Tspi_Context_CloseObject(ctx, bound_pcrs);
+			    }};
+			    if(pcrs_len) {
+				    auto has_big = std::find_if(pcrs, pcrs + pcrs_len, [](auto p) { return p > 15; }) != pcrs + pcrs_len;
+
+				    TRY_TPM1X("create PCR list",
+				              Tspi_Context_CreateObject(ctx, TSS_OBJECT_TYPE_PCRS, has_big ? TSS_PCRS_STRUCT_INFO_LONG : TSS_PCRS_STRUCT_DEFAULT, &bound_pcrs));
+
+				    for(size_t i = 0; i < pcrs_len; i++) {
+					    char buf[15 + 10 + 1];  // 4294967296
+					    snprintf(buf, sizeof(buf), "read PCR %" PRIu32 "", pcrs[i]);
+
+					    BYTE * val{};
+					    uint32_t val_len{};
+					    TRY_TPM1X(buf, Tspi_TPM_PcrRead(tpm_h, pcrs[i], &val_len, &val));
+					    quickscope_wrapper bound_pcrs_deleter{[&] { Tspi_Context_FreeMemory(ctx, val); }};
+
+					    snprintf(buf, sizeof(buf), "save PCR %" PRIu32 " value", pcrs[i]);
+					    TRY_TPM1X(buf, Tspi_PcrComposite_SetPcrValue(bound_pcrs, pcrs[i], val_len, val));
+				    }
+
+				    if(has_big)
+					    TRY_TPM1X("set PCR locality", Tspi_PcrComposite_SetPcrLocality(bound_pcrs, TSS_LOCALITY_ALL));
+			    }
 
 
 			    uint8_t * wrap_key{};
@@ -91,12 +134,8 @@ int main(int argc, char ** argv) {
 				    Tspi_Context_CloseObject(ctx, sealed_object);
 			    }};
 
-			    // This would need to replace the 0 below to handle PCRs
-			    // TSS_HOBJECT bound_pcrs{};  // See tpm_sealdata.c from src:tpm-tools for more on flags here
-			    // TRY_TPM1X("create PCR list", Tspi_Context_CreateObject(ctx, TSS_OBJECT_TYPE_PCRS, 0, &bound_pcrs));
-			    // quickscope_wrapper bound_pcrs_deleter{[&] { Tspi_Context_CloseObject(ctx, bound_pcrs); }};
 
-			    TRY_TPM1X("seal wrapping key data", Tspi_Data_Seal(sealed_object, parent_key, WRAPPING_KEY_LEN, wrap_key, 0));
+			    TRY_TPM1X("seal wrapping key data", Tspi_Data_Seal(sealed_object, parent_key, WRAPPING_KEY_LEN, wrap_key, bound_pcrs));
 
 
 			    uint8_t * parent_key_blob{};
@@ -118,10 +157,10 @@ int main(int argc, char ** argv) {
 				    {
 					    auto cur = handle;
 					    for(auto i = 0u; i < parent_key_blob_len; ++i, cur += 2)
-						    sprintf(cur, "%02X", parent_key_blob[i]);
+						    sprintf(cur, "%02hhX", parent_key_blob[i]);
 					    *cur++ = ':';
 					    for(auto i = 0u; i < sealed_object_blob_len; ++i, cur += 2)
-						    sprintf(cur, "%02X", sealed_object_blob[i]);
+						    sprintf(cur, "%02hhX", sealed_object_blob[i]);
 					    *cur++ = '\0';
 				    }
 

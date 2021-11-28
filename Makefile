@@ -23,7 +23,7 @@
 include configMakefile
 
 
-LDDLLS := rt tspi $(OS_LD_LIBS)
+LDDLLS := rt tspi crypto $(OS_LD_LIBS)
 PKGS := libzfs libzfs_core tss2-esys tss2-rc
 LDAR := $(LNCXXAR) $(foreach l,,-L$(BLDDIR)$(l)) $(foreach dll,$(LDDLLS),-l$(dll)) $(shell pkg-config --libs $(PKGS))
 INCAR := $(foreach l,$(foreach l,,$(l)/include),-isystemext/$(l)) $(foreach l,,-isystem$(BLDDIR)$(l)/include) $(shell pkg-config --cflags $(PKGS))
@@ -98,10 +98,6 @@ $(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/
 $(OBJDIR)%$(OBJ) : $(SRCDIR)%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXAR) $(INCAR) $(VERAR) $(DEF_TPH) -c -o$@ $^
-
-$(BLDDIR)test/%$(OBJ) : $(TSTDIR)%.cpp
-	@mkdir -p $(dir $@)
-	$(CXX) $(CXXAR) $(INCAR) -I$(SRCDIR) $(VERAR) -c -o$@ $^
 
 $(OUTDIR)dracut/usr/lib/dracut/modules.d/91tzpfms/% : $(INITRDDIR)dracut/% $(INITRD_HEADERS)
 	@mkdir -p $(dir $@)

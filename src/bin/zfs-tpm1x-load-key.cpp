@@ -69,7 +69,7 @@ int main(int argc, char ** argv) {
 			    if(loaded_wrap_key_len != sizeof(wrap_key)) {
 				    fprintf(stderr, "Wrong sealed data length (%" PRIu32 " != %zu): ", loaded_wrap_key_len, sizeof(wrap_key));
 				    for(auto i = 0u; i < loaded_wrap_key_len; ++i)
-					    fprintf(stderr, "%02X", loaded_wrap_key[i]);
+					    fprintf(stderr, "%02hhX", loaded_wrap_key[i]);
 				    fprintf(stderr, "\n");
 				    return __LINE__;
 			    }
