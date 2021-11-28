@@ -28,9 +28,6 @@ static int do_bare_main(
 
 	libzfs_print_on_error(libz, B_TRUE);
 
-#if __GLIBC__
-	setenv("POSIXLY_CORRECT", "1", true);
-#endif
 	auto gopts = reinterpret_cast<char *>(alloca(strlen(getoptions) + 2 + 1));
 	gopts[0] = 'h', gopts[1] = 'V';
 	strcpy(gopts + 2, getoptions);
@@ -65,12 +62,14 @@ static int do_main(
 	return do_bare_main(
 	    argc, argv, getoptions, usage, "dataset", getoptfn,
 	    [&](auto libz) {
-		    if(optind >= argc)
+		    if(!*(argv + optind))
 			    return fprintf(stderr,
 			                   "No dataset to act on?\n"
 			                   "Usage: %s [-hV] %s%sdataset\n",
 			                   argv[0], usage, strlen(usage) ? " " : ""),
 			           __LINE__;
+		    if(*(argv + optind + 1))
+			    return fprintf(stderr, "Usage: %s [-hV] %s%sdataset\n", argv[0], usage, strlen(usage) ? " " : ""), __LINE__;
 		    auto dataset = TRY_PTR(nullptr, zfs_open(libz, argv[optind], ZFS_TYPE_FILESYSTEM | ZFS_TYPE_VOLUME));
 		    quickscope_wrapper dataset_deleter{[&] { zfs_close(dataset); }};
 
