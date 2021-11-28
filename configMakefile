@@ -20,14 +20,14 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-EXE :=
-DLL := .so
-OS_LD_LIBS :=
-
 CXXVER := $(shell $(CXX) --version)
 ifneq "$(findstring clang,$(CXXVER))" ""
 	# GCC doesn't have this granularity
 	CXXSPECIFIC := -flto=full -pedantic -Wno-gnu-statement-expression -Wno-gnu-include-next -Wno-gnu-conditional-omitted-operand -Wno-c++20-designator
+	ifeq "$(AR)" "ar"
+		# Need this because -flto=full produces objects FSF ranlib (ar s) can't index
+		override AR := llvm-ar
+	endif
 else
 	CXXSPECIFIC := -flto
 endif
@@ -55,7 +55,6 @@ AWK ?= awk
 SED ?= sed
 MANDOC ?= mandoc
 SHELLCHECK ?= shellcheck
-OBJ := .o
 CXXAR := -g -O3 -std=c++17 -fno-exceptions -Wall -Wextra $(CXXSPECIFIC) -pipe $(INCCXXAR) -fPIC
 
 OUTDIR := out/

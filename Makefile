@@ -23,7 +23,7 @@
 include configMakefile
 
 
-LDDLLS := rt tspi crypto $(OS_LD_LIBS)
+LDDLLS := rt tspi crypto
 PKGS := libzfs libzfs_core tss2-esys tss2-rc
 LDAR := $(LNCXXAR) $(foreach l,,-L$(BLDDIR)$(l)) $(foreach dll,$(LDDLLS),-l$(dll)) $(shell pkg-config --libs $(PKGS))
 INCAR := $(foreach l,$(foreach l,,$(l)/include),-isystemext/$(l)) $(foreach l,,-isystem$(BLDDIR)$(l)/include) $(shell pkg-config --cflags $(PKGS))
@@ -55,7 +55,7 @@ shellcheck : i-t dracut
 clean :
 	rm -rf $(OUTDIR)
 
-build : $(subst $(SRCDIR)bin/,$(OUTDIR),$(subst .cpp,$(EXE),$(BINARY_SOURCES)))
+build : $(subst $(SRCDIR)bin/,$(OUTDIR),$(subst .cpp,,$(BINARY_SOURCES)))
 manpages : $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%,$(MANPAGE_SOURCES))
 htmlpages : $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%.html,$(MANPAGE_SOURCES)) $(OUTDIR)man/style.css
 i-t : $(OUTDIR)initramfs-tools/usr/share/initramfs-tools/hooks/tzpfms $(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
@@ -90,12 +90,15 @@ $(OUTDIR)man/style.css : man/style.css
 	@mkdir -p $(dir $@)
 	cp $^ $@
 
+$(BLDDIR)libtzpfms.a : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,.o,$(COMMON_SOURCES)))
+	$(AR) crs $@ $^
 
-$(OUTDIR)%$(EXE) : $(subst $(SRCDIR),$(OBJDIR),$(subst .cpp,$(OBJ),$(SRCDIR)bin/%.cpp $(COMMON_SOURCES)))
+
+$(OUTDIR)% : $(OBJDIR)bin/%.o $(BLDDIR)libtzpfms.a
 	@mkdir -p $(dir $@)
-	$(CXX) $(CXXAR) -o$@ $^ -Wl,--as-needed $(LDAR)
+	$(CXX) $(CXXAR) -Wl,--as-needed -o$@ $^ $(LDAR)
 
-$(OBJDIR)%$(OBJ) : $(SRCDIR)%.cpp
+$(OBJDIR)%.o : $(SRCDIR)%.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXAR) $(INCAR) $(VERAR) $(DEF_TPH) -c -o$@ $^
 
