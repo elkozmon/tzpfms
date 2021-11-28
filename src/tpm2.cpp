@@ -45,8 +45,9 @@ TPM2B_DATA tpm2_creation_metadata(const char * dataset_name) {
 
 	struct timespec ts;
 	clock_gettime(CLOCK_REALTIME, &ts);
-	metadata.size =
-	    snprintf((char *)metadata.buffer, sizeof(metadata.buffer), "%" PRIu64 ".%09ld %s %s", ts.tv_sec, ts.tv_nsec, dataset_name, TZPFMS_VERSION) + 1;
+	metadata.size = snprintf((char *)metadata.buffer, sizeof(metadata.buffer), "%" PRIu64 ".%09" PRId64 " %s %s", ts.tv_sec, static_cast<int64_t>(ts.tv_nsec),
+	                         dataset_name, TZPFMS_VERSION) +
+	                1;
 	metadata.size = metadata.size > sizeof(metadata.buffer) ? sizeof(metadata.buffer) : metadata.size;
 
 	// fprintf(stderr, "%" PRIu16 "/%zu: \"%s\"\n", metadata.size, sizeof(metadata.buffer), metadata.buffer);
