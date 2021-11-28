@@ -105,7 +105,7 @@ In case of a catastrophic event, the key can be loaded by running
 Bind the key to space- or comma-separated
 .Ar PCR Ns s
 \(em if they change, the wrapping key will not be able to be unsealed.
-The minimum amount of PCRs for a PC TPM is
+The minimum number of PCRs for a PC TPM is
 .Sy 24 Pq numbered Sy 0 Ns .. Ns Sy 23 .
 For most, this is also the maximum.
 .El

@@ -1,4 +1,4 @@
-# tzpfms [![builds.sr.ht badge](//builds.sr.ht/~nabijaczleweli/tzpfms.svg)](https://builds.sr.ht/~nabijaczleweli/tzpfms) [![Licence](//img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+# tzpfms [![builds.sr.ht badge](//builds.sr.ht/~nabijaczleweli/tzpfms.svg)](//builds.sr.ht/~nabijaczleweli/tzpfms) [![Licence](//img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 TPM-based encryption keys for ZFS datasets.
 
 ## [Manpages](//srhtcdn.githack.com/~nabijaczleweli/tzpfms/blob/man/zfs-tpm-list.8.html) ([PDF](//srhtcdn.githack.com/~nabijaczleweli/tzpfms/blob/man/tzpfms.pdf))
@@ -22,7 +22,7 @@ Additionally, 1.x TPMs support PCR binding with and without passwords.
 2 TPMs support PCR binding without a password and PCR binding *OR* a password – both may be set, and any can be used to unseal (exclusive by default to prevent foot-guns).
 
 Both dracut (with/without Plymouth) (with/without hostonly) (only on systemd systems, I don't have a test-bed for the non-systemd path)
-and initramfs-tools (with/without Plymouth) are supported for [ZFS-on-root](https://nabijaczleweli.xyz/content/blogn_t/005-low-curse-zfs-on-root.html) set-ups.
+and initramfs-tools (with/without Plymouth) are supported for [ZFS-on-root](//nabijaczleweli.xyz/content/blogn_t/005-low-curse-zfs-on-root.html) set-ups.
 
 ### Building
 
@@ -63,7 +63,7 @@ Then the usual
 sudo apt update
 sudo apt install tzpfms-tpm2 tzpfms-dracut
 ```
-will work on amd64 and i386 (x32 [still](https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=968256#15) doesn't have ZFS in Debian).
+will work on amd64, x32, and i386.
 
 See the [repository README](//debian.nabijaczleweli.xyz/README) for more information.
 
