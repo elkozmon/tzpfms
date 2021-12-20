@@ -1,7 +1,7 @@
 image: debian/sid
 secrets:
   - ccb6777e-650b-4fa2-87e1-e2342f5bb605  # tzpfms SSH key
-  - 513a97a6-300c-4749-93a7-7816b2c4f41d  # tzpfms auth token
+  - b128b3a7-1288-46fe-936a-d6a7a10ef435  # tzpfms auth token
 packages:
   - clang
   - llvm-dev
@@ -49,12 +49,14 @@ tasks:
       mv tzpfms/out/zfs-tpm*        "tzpfms-$tag-bin-amd64"
       mv tzpfms/out/dracut          "tzpfms-$tag-dracut"
       mv tzpfms/out/initramfs-tools "tzpfms-$tag-initramfs-tools"
+      mv tzpfms/out/systemd         "tzpfms-$tag-systemd"
       mv tzpfms/out/man             "tzpfms-$tag-man"
       mv tzpfms-man/tzpfms.ps       "tzpfms-$tag-manual.ps"
       mv tzpfms-man/tzpfms.pdf      "tzpfms-$tag-manual.pdf"
-      for s in bin-amd64 dracut initramfs-tools man; do
+      for s in bin-amd64 dracut initramfs-tools systemd man; do
         tar -caf "tzpfms-$tag-$s.tbz2" "tzpfms-$tag-$s"
       done
+      sha256sum *.tbz2 "tzpfms-$tag-manual.ps" "tzpfms-$tag-manual.pdf"
       set +x  # Avoid echoing the token
       for f in *.tbz2 "tzpfms-$tag-manual.ps" "tzpfms-$tag-manual.pdf"; do
         curl -H "Authorization: Bearer $(cat ~/.release-token)" \
