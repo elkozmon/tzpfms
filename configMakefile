@@ -45,8 +45,8 @@ else
 	LNCXXAR :=
 endif
 
-TZPFMS_VERSION := "$(patsubst v%,%,$(shell git describe))"
-TZPFMS_DATE := $(shell date -d@$$(git log --no-show-signature -1 --pretty=%at) '+%B %e, %Y')
+TZPFMS_VERSION ?= "$(patsubst v%,%,$(shell git describe))"
+TZPFMS_DATE ?= $(shell date -d@$$(git log --no-show-signature -1 --pretty=%at) '+%B %e, %Y')
 
 SYSTEMD_SYSTEM_UNITDIR := $(shell ssud="$$(pkg-config --variable=systemd_system_unit_dir systemd 2>/dev/null)"; echo "$${ssud:-/usr/lib/systemd/system}")
 
