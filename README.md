@@ -45,6 +45,9 @@ For initrd support, copy the content of either `out/dracut/` or `out/initramfs-t
 these need `zfs-tpm-list` but will work with any combination of back-end `*-load-key` binaries
 (local TPM1.X initrds need to be updated when the system state changes (e.g. the TPM is taken ownership of)).
 
+To integrate with [zfs-mount-generator(8)](//manpages.debian.org/bookworm/zfsutils-linux/zfs-mount-generator.8.html)
+[copy](//twitter.com/nabijaczleweli/status/1472986504272261124) `out/systemd/` over `/`.
+
 #### From Debian repository
 
 The following line in `/etc/apt/sources.list` or equivalent:
@@ -55,7 +58,7 @@ deb https://debian.nabijaczleweli.xyz sid main
 With [my PGP key](//nabijaczleweli.xyz/pgp.txt) (the two URLs are interchangeable):
 ```sh
 sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc https://debian.nabijaczleweli.xyz/nabijaczleweli.gpg.key
-sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc https://keybase.io/nabijaczleweli/pgp_keys.asc
+sudo wget -O/etc/apt/trusted.gpg.d/nabijaczleweli.asc https://nabijaczleweli.xyz/pgp.txt
 ```
 
 Then the usual

@@ -18,3 +18,5 @@
 !contrib/**
 !initrd
 !initrd/**
+!init.d
+!init.d/**

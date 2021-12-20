@@ -43,14 +43,14 @@ else
 DEF_TPH_MAN ?= .
 endif
 
-.PHONY : all clean build shellcheck i-t dracut manpages htmlpages
+.PHONY : all clean build shellcheck i-t dracut init.d-systemd manpages htmlpages
 .SECONDARY:
 
 
-all : build manpages htmlpages shellcheck i-t dracut
+all : build manpages htmlpages shellcheck i-t init.d-systemd dracut
 
 shellcheck : i-t dracut
-	find $(OUTDIR)initramfs-tools/ $(OUTDIR)dracut -name '*.sh' -exec echo $(SHELLCHECK) --exclude SC1091 {} + | sh -x
+	find $(OUTDIR)initramfs-tools/ $(OUTDIR)dracut/ init.d/ -name '*.sh' -exec echo $(SHELLCHECK) --exclude SC1091,SC2093 {} + | sh -x
 
 clean :
 	rm -rf $(OUTDIR)
@@ -60,6 +60,7 @@ manpages : $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%,$(MANPAGE_SOURCES))
 htmlpages : $(patsubst $(MANDIR)%.pp,$(OUTDIR)man/%.html,$(MANPAGE_SOURCES)) $(OUTDIR)man/style.css
 i-t : $(OUTDIR)initramfs-tools/usr/share/initramfs-tools/hooks/tzpfms $(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh
 dracut : $(patsubst $(INITRDDIR)dracut/%,$(OUTDIR)dracut/usr/lib/dracut/modules.d/91tzpfms/%,$(sort $(wildcard $(INITRDDIR)dracut/*.sh)))
+init.d-systemd : $(OUTDIR)systemd/$(SYSTEMD_SYSTEM_UNITDIR)/zfs-load-key@.service.d/tzpfms.conf $(OUTDIR)systemd/usr/libexec/tzpfms-zfs-load-key@
 
 
 $(OUTDIR)initramfs-tools/usr/share/initramfs-tools/hooks/tzpfms: $(INITRDDIR)initramfs-tools/hook $(INITRD_HEADERS)
@@ -71,6 +72,14 @@ $(OUTDIR)initramfs-tools/usr/share/tzpfms/initramfs-tools-zfs-patch.sh: $(INITRD
 	@mkdir -p $(dir $@)
 	$(AWK) -f pp.awk $< > $@
 	chmod --reference $< $@
+
+$(OUTDIR)systemd/$(SYSTEMD_SYSTEM_UNITDIR)/zfs-load-key@.service.d/tzpfms.conf : init.d/systemd/zfs-load-key@.service.d-tzpfms.conf
+	@mkdir -p $(dir $@)
+	ln -f $< $@ || cp $< $@
+
+$(OUTDIR)systemd/usr/libexec/tzpfms-zfs-load-key@ : init.d/systemd/libexec-tzpfms-zfs-load-key@.sh
+	@mkdir -p $(dir $@)
+	ln -f $< $@ || cp $< $@
 
 # The d-v-o-s string starts at "BSD" (hence the "BSD General Commands Manual" default); we're not BSD, so hide it
 # Can't put it at the very top, since man(1) only loads mdoc *after* the first mdoc macro (.Dd in our case)

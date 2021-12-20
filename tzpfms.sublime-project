@@ -37,6 +37,11 @@
 		},
 		{
 			"follow_symlinks": true,
+			"name": "Init system plug-ins",
+			"path": "init.d"
+		},
+		{
+			"follow_symlinks": true,
 			"name": "Manpages",
 			"path": "man"
 		},
