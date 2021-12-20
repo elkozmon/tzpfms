@@ -76,10 +76,10 @@ List only encryption roots with the specified
 .Nm tzpfms
 .Ar back-end .
 .Pp
+.It Fl u
+List only encryption roots whose keys are unavailable.
 .It Fl l
 List only encryption roots whose keys are available.
-.It Fl y
-List only encryption roots whose keys are unavailable.
 .El
 .
 .Sh EXAMPLES
