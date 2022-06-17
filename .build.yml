@@ -33,8 +33,8 @@ tasks:
       cd tzpfms-man
       git ls-tree -z --name-only HEAD | xargs -0 rm -r
       cp -pr ../tzpfms/out/man/* .
-      sed -e 's/…/.../g' $(ls *.[12345678] | awk -F. '{print $2 "\t" $1}' | sort | awk -F'\t' '{print $2 "." $1}') | groff -K utf8 -tpe -mdoc -Tps > tzpfms.ps
-      ps2pdf tzpfms.ps tzpfms.pdf
+      sed -e 's/…/.../g' $(ls *.[12345678] | awk -F. '{print $2 "\t" $1}' | sort | awk -F'\t' '{print $2 "." $1}') | groff -K utf8 -tpe -mdoc -Tps -dpaper=a4 -P-pa4 > tzpfms.ps
+      ps2pdf -sPAPERSIZE=a4 tzpfms.ps tzpfms.pdf
       git add .
       git config user.email "nabijaczleweli/autouploader@nabijaczleweli.xyz"
       git config user.name "наб autouploader"
